@@ -2,8 +2,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom'; // ✅ import Link
 import cricketLogo from '../../assets/cricket-logo.png'; // adjust path if needed
+import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Perform login logic here
+
+    // On success
+    navigate("/home");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 to-gray-900 text-white px-4">
       <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md p-8 rounded-2xl shadow-xl text-center">
@@ -25,7 +36,7 @@ export default function LoginPage() {
           Login to your account
         </h3>
 
-        <form className="space-y-4 text-left">
+        <form onSubmit={handleSubmit} className="space-y-4 text-left">
           <input
             type="text"
             placeholder="Username"
