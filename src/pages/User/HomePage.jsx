@@ -90,10 +90,15 @@ export default function HomePage() {
       .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const navItems = [
-    { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
-    { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
-    { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
+  // const navItems = [
+  //   { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
+  //   { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
+  //   { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
+  // ];
+    const navItems = [
+    { label: 'Home', path: '/home' },
+    { label: 'My Match',path: '/my-match' },
+    { label: 'Account', path: '/account' },
   ];
 
   return (

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import SportsCricketIcon from '@mui/icons-material/SportsCricket';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+// import SportsCricketIcon from '@mui/icons-material/SportsCricket';
+// import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+// import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -48,9 +48,9 @@ export default function AccountPage() {
   };
 
   const navItems = [
-    { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
-    { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
-    { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
+    { label: 'Home', path: '/home' },
+    { label: 'My Match', path: '/my-match' },
+    { label: 'Account',  path: '/account' },
   ];
 
   const accountOptions = [
