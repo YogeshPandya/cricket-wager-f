@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-// import SportsCricketIcon from '@mui/icons-material/SportsCricket';
-// import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-// import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SportsCricketIcon from '@mui/icons-material/SportsCricket';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export default function HomePage() {
   const location = useLocation();
@@ -90,15 +90,10 @@ export default function HomePage() {
       .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // const navItems = [
-  //   { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
-  //   { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
-  //   { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
-  // ];
-    const navItems = [
-    { label: 'Home', path: '/home' },
-    { label: 'My Match',path: '/my-match' },
-    { label: 'Account', path: '/account' },
+  const navItems = [
+    { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
+    { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
+    { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
   ];
 
   return (
