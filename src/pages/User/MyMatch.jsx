@@ -9,9 +9,9 @@ export default function MyMatch() {
   const [activeTab, setActiveTab] = useState('upcoming');
 
   const navItems = [
-    { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
-    { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
-    { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
+    { label: 'Home', path: '/home' },
+    { label: 'My Match', path: '/my-match' },
+    { label: 'Account',  path: '/account' },
   ];
 
   const renderContent = () => {
