@@ -8,10 +8,7 @@ export default function Rules() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white p-4">
       {/* Back Button */}
-      <button
-        onClick={() => navigate('/account')}
-        className="text-yellow-300 mb-4 font-medium"
-      >
+      <button onClick={() => navigate('/account')} className="text-yellow-300 mb-6 font-semibold text-lg hover:underline">
         ← Back
       </button>
 
