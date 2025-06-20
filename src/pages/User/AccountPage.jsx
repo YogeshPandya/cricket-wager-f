@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+// AccountPage.jsx
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
@@ -10,36 +11,12 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import GavelIcon from '@mui/icons-material/Gavel';
-import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
-import { Menu, MenuItem, IconButton, Divider } from '@mui/material';
+import PersonIcon from '@mui/icons-material/Person';
+import LockResetIcon from '@mui/icons-material/LockReset';
 
 export default function AccountPage() {
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleNavigate = (path) => {
-    handleMenuClose();
-    navigate(path);
-  };
-
-  const handleLogout = () => {
-    handleMenuClose();
-    // Clear user session if stored in localStorage/sessionStorage
-    // localStorage.clear(); or sessionStorage.clear();
-    navigate('/login');
-  };
 
   const user = {
     name: "Rahul Sharma",
@@ -57,11 +34,26 @@ export default function AccountPage() {
     { label: 'Recharge Records', icon: <ReceiptIcon />, path: '/recharge-records' },
     { label: 'Withdrawal Records', icon: <ReceiptIcon />, path: '/withdrawal-records' },
     { label: 'Link Bank Account', icon: <AccountBalanceIcon />, path: '/link-bank' },
+
+    // 👇 Added setting options below "Link Bank Account"
+    { label: 'User Information', icon: <PersonIcon />, path: '/user-info' },
+{ label: 'Reset Password', icon: <LockResetIcon />, path: '/reset-password' },
+
+
     { label: 'My Feedback', icon: <FeedbackIcon />, path: '/feedback' },
     { label: 'Rules and Conditions', icon: <GavelIcon />, path: '/rules' },
     { label: 'Help', icon: <HelpOutlineIcon />, path: '/help' },
     { label: 'About Us', icon: <InfoIcon />, path: '/about' },
+
+    // 👇 Logout at the very end
+    { label: 'Logout', icon: <LogoutIcon />, path: '/login', logout: true },
   ];
+
+  const handleLogout = (label) => {
+    if (label === 'Logout') {
+      // sessionStorage.clear() / localStorage.clear() if needed
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-400 to-gray-900 text-white">
@@ -80,70 +72,6 @@ export default function AccountPage() {
               Balance: ₹{user.balance.toFixed(2)}
             </p>
           </div>
-
-          {/* Settings Icon */}
-          <div className="absolute top-4 right-4 z-10">
-            <IconButton
-              onClick={handleMenuClick}
-              className="text-yellow-300"
-              size="small"
-            >
-              <SettingsIcon />
-            </IconButton>
-          </div>
-
-          {/* Dropdown Menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={open}
-            onClose={handleMenuClose}
-            PaperProps={{
-              sx: {
-                backgroundImage: 'linear-gradient(to bottom right, #34d399, #1f2937)',
-                color: 'white',
-                borderRadius: 2,
-                minWidth: 180,
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-              },
-            }}
-          >
-            <MenuItem
-              onClick={() => handleNavigate('/user-info')}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(234, 179, 8, 0.2)',
-                  color: '#facc15',
-                },
-              }}
-            >
-              User Information
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleNavigate('/change-password')}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(234, 179, 8, 0.2)',
-                  color: '#facc15',
-                },
-              }}
-            >
-              Change Password
-            </MenuItem>
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', my: 1 }} />
-            <MenuItem
-              onClick={handleLogout}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                  color: '#f87171',
-                },
-              }}
-            >
-              <LogoutIcon fontSize="small" className="mr-2" />
-              Logout
-            </MenuItem>
-          </Menu>
         </div>
 
         {/* Main Actions */}
@@ -168,7 +96,10 @@ export default function AccountPage() {
             <Link
               key={opt.label}
               to={opt.path}
-              className="flex items-center gap-3 p-2 text-white hover:text-yellow-300 transition"
+              onClick={() => handleLogout(opt.label)}
+              className={`flex items-center gap-3 p-2 text-white ${
+                opt.logout ? 'text-red-300 hover:text-red-500' : 'hover:text-yellow-300'
+              } transition`}
             >
               {opt.icon}
               <span>{opt.label}</span>
