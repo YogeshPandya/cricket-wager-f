@@ -97,80 +97,66 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white">
-      <div className="flex-1 overflow-y-auto p-3 pb-28">
-
-        {/* 🔥 Improved Header Section */}
-        <div className="text-center mb-5">
-         <h1 className="text-4xl font-extrabold drop-shadow-md tracking-wide">
-  <span className="text-green-300">Cricket</span>{' '}
-  <span className="text-yellow-400">Wager</span>
-</h1>
-
-          <p className="mt-1 text-sm text-gray-200 italic tracking-wide">
-            Predict. Play. Win Big. 🏏
-          </p>
-          <h3 className="mt-4 text-xl font-bold text-yellow-400 animate-pulse drop-shadow-sm">
-            🔴 Live Matches
-          </h3>
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white font-sans">
+      <div className="flex-1 overflow-y-auto p-4 pb-28">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold tracking-wide text-yellow-400 drop-shadow-xl">
+            <span className="text-green-300">Cricket</span> Wager
+          </h1>
+          <p className="text-gray-300 text-sm italic mt-1">Predict. Play. Win Big. 🏏</p>
+          <div className="mt-4 text-lg font-semibold text-white flex items-center justify-center gap-2">
+            <span className="animate-ping inline-block w-3 h-3 bg-red-500 rounded-full"></span>
+            <span className="text-yellow-400">Live Matches</span>
+          </div>
         </div>
 
-        {/* 🔽 Match Cards */}
-        <div className="space-y-3">
+        <div className="flex flex-col gap-6">
           {timers.map((match) => (
-            <div
+            <Link
               key={match.id}
-              className="bg-white bg-opacity-10 p-2 rounded-md shadow hover:bg-opacity-20 transition"
+              to={match.id === 1 ? '/match-details' : '#'}
+              className="bg-white bg-opacity-10 hover:bg-opacity-20 rounded-xl p-4 transition-all duration-300 border border-white/10 shadow-lg"
             >
-              {/* Series Name & Format */}
-              <div className="text-center text-xs mb-1 leading-tight">
-                <div className="text-white font-semibold">{match.seriesName}</div>
-                <div className="text-yellow-400">{match.matchFormat}</div>
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  <p className="text-sm text-gray-300 font-semibold">{match.seriesName}</p>
+                  <p className="text-xs text-yellow-400">{match.matchFormat}</p>
+                </div>
+                <p className="text-sm text-yellow-300 font-bold">
+                  {match.targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
 
-              {/* Teams + VS */}
-              <div className="flex justify-between items-center text-xs font-medium mb-1">
-                <div className="flex flex-col items-center w-1/3">
-                  <img src={match.logoA} alt={match.teamA} className="w-6 h-6 rounded-full mb-0.5" />
-                  <span>{match.teamA}</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 w-1/2">
+                  <img src={match.logoA} alt={match.teamA} className="w-8 h-8 rounded-full" />
+                  <span className="text-sm font-medium">{match.teamA}</span>
                 </div>
-
-                <div className="w-1/3 text-center text-yellow-300 text-sm font-bold">VS</div>
-
-                <div className="flex flex-col items-center w-1/3">
-                  <img src={match.logoB} alt={match.teamB} className="w-6 h-6 rounded-full mb-0.5" />
-                  <span>{match.teamB}</span>
+                <p className="text-yellow-300 font-bold text-sm">VS</p>
+                <div className="flex items-center gap-2 w-1/2 justify-end">
+                  <span className="text-sm font-medium">{match.teamB}</span>
+                  <img src={match.logoB} alt={match.teamB} className="w-8 h-8 rounded-full" />
                 </div>
               </div>
 
-              {/* Time + Timer */}
-              <div className="text-center text-xs">
-                <span className="block text-yellow-300 mb-0.5">
-                  {match.targetDate.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
+              <div className="text-center">
                 {match.remaining > 0 ? (
-                  <span className="text-white font-mono text-[11px]">
-                    Starts in: {formatTime(match.remaining)}
-                  </span>
+                  <span className="text-white font-mono text-xs">Starts in: {formatTime(match.remaining)}</span>
                 ) : (
-                  <span className="text-red-500 font-semibold animate-pulse text-xs">Live</span>
+                  <span className="text-red-500 font-semibold animate-pulse text-sm">Live</span>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
 
-      {/* Fixed Footer */}
-      <footer className="fixed bottom-0 left-0 w-full bg-white bg-opacity-10 backdrop-blur-md text-white py-2 px-4 flex justify-around border-t border-white border-opacity-20">
+      <footer className="fixed bottom-0 left-0 w-full bg-white bg-opacity-10 backdrop-blur-md text-white py-2 px-4 flex justify-around border-t border-white/20">
         {navItems.map((item) => (
           <Link
             key={item.label}
             to={item.path}
-            className={`flex flex-col items-center text-xs ${
+            className={`flex flex-col items-center text-xs font-semibold transition-colors duration-200 ${
               location.pathname === item.path ? 'text-yellow-300' : 'text-white'
             }`}
           >
