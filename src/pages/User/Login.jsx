@@ -1,14 +1,25 @@
 // src/pages/LoginPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import cricketLogo from '../../assets/cricket-logo.png'; // adjust path if needed
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Perform login logic here
+
+    if (!username.trim() || !password.trim()) {
+      setError('Username and Password are required.');
+      return;
+    }
+
+    setError('');
+    // ✅ Perform login logic here...
 
     // On success
     navigate("/home");
@@ -17,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 to-gray-900 text-white px-4">
       <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md p-8 rounded-2xl shadow-xl text-center">
-        
+
         {/* Logo */}
         <img
           src={cricketLogo}
@@ -40,15 +51,24 @@ export default function LoginPage() {
           <input
             type="text"
             placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-20 placeholder-white border border-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 rounded-lg bg-white bg-opacity-20 placeholder-white border border-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
             required
           />
+
+          {/* ✅ Error Message */}
+          {error && (
+            <div className="text-red-400 text-sm font-medium">{error}</div>
+          )}
 
           <div className="text-right text-sm">
             <Link to="/forgot-password" className="text-yellow-200 hover:underline">
