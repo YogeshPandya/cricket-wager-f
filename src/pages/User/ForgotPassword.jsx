@@ -1,5 +1,6 @@
 import React from 'react';
 import cricketLogo from '../../assets/cricket-logo.png'; // Adjust path if needed
+import { Link } from 'react-router-dom';
 
 export default function ForgotPassword() {
   return (
@@ -40,9 +41,9 @@ export default function ForgotPassword() {
 
         <div className="text-center mt-6 text-sm text-gray-300">
           Remember your password?{' '}
-          <a href="/login" className="text-yellow-300 hover:underline">
+          <Link to="/login" className="text-yellow-300 hover:underline">
             Log in
-          </a>
+          </Link>
         </div>
       </div>
     </div>
