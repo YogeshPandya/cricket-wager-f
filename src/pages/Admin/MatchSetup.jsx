@@ -2,21 +2,102 @@
 import React, { useState } from 'react';
 import AdminLayout from './components/AdminLayout';
 
-const countries = [
-  { name: 'India', code: 'in' },
-  { name: 'Australia', code: 'au' },
-  { name: 'England', code: 'gb' },
-  { name: 'Pakistan', code: 'pk' },
-  { name: 'South Africa', code: 'za' },
-  { name: 'New Zealand', code: 'nz' },
-];
+const leagueTeams = {
+  International: [
+    { name: 'India', code: 'IN' },
+    { name: 'Australia', code: 'AU' },
+    { name: 'England', code: 'GB' },
+    { name: 'Pakistan', code: 'PK' },
+    { name: 'South Africa', code: 'ZA' },
+    { name: 'New Zealand', code: 'NZ' },
+    { name: 'Sri Lanka', code: 'SL' },
+    { name: 'Bangladesh', code: 'BD' },
+    { name: 'Afghanistan', code: 'AF' },
+    { name: 'Ireland', code: 'IE' },
+    { name: 'Netherlands', code: 'NL' },
+    { name: 'Zimbabwe', code: 'ZW' },
+    { name: 'UAE', code: 'AE' },
+    { name: 'Scotland', code: 'SC' },
+    { name: 'Namibia', code: 'NA' },
+    { name: 'Nepal', code: 'NP' }
+  ],
+  IPL: [
+    { name: 'Mumbai Indians', code: 'MI' },
+    { name: 'Chennai Super Kings', code: 'CSK' },
+    { name: 'Royal Challengers Bangalore', code: 'RCB' },
+    { name: 'Kolkata Knight Riders', code: 'KKR' },
+    { name: 'Sunrisers Hyderabad', code: 'SRH' },
+    { name: 'Delhi Capitals', code: 'DC' },
+    { name: 'Punjab Kings', code: 'PBKS' },
+    { name: 'Rajasthan Royals', code: 'RR' },
+    { name: 'Lucknow Super Giants', code: 'LSG' },
+    { name: 'Gujarat Titans', code: 'GT' }
+  ],
+  PSL: [
+    { name: 'Lahore Qalandars', code: 'LQ' },
+    { name: 'Karachi Kings', code: 'KK' },
+    { name: 'Peshawar Zalmi', code: 'PZ' },
+    { name: 'Quetta Gladiators', code: 'QG' },
+    { name: 'Islamabad United', code: 'IU' },
+    { name: 'Multan Sultans', code: 'MS' }
+  ],
+  BBL: [
+    { name: 'Sydney Sixers', code: 'SS' },
+    { name: 'Sydney Thunder', code: 'ST' },
+    { name: 'Melbourne Stars', code: 'MS' },
+    { name: 'Melbourne Renegades', code: 'MR' },
+    { name: 'Perth Scorchers', code: 'PS' },
+    { name: 'Adelaide Strikers', code: 'AS' },
+    { name: 'Brisbane Heat', code: 'BH' },
+    { name: 'Hobart Hurricanes', code: 'HH' }
+  ],
+  SA20: [
+    { name: 'Pretoria Capitals', code: 'PC' },
+    { name: 'Joburg Super Kings', code: 'JSK' },
+    { name: 'Durban Super Giants', code: 'DSG' },
+    { name: 'MI Cape Town', code: 'MICT' },
+    { name: 'Paarl Royals', code: 'PR' },
+    { name: 'Sunrisers Eastern Cape', code: 'SEC' }
+  ],
+  CPL: [
+    { name: 'Barbados Royals', code: 'BR' },
+    { name: 'Guyana Amazon Warriors', code: 'GAW' },
+    { name: 'Jamaica Tallawahs', code: 'JT' },
+    { name: 'St Kitts & Nevis Patriots', code: 'SNP' },
+    { name: 'St Lucia Kings', code: 'SLK' },
+    { name: 'Trinbago Knight Riders', code: 'TKR' }
+  ],
+  'Abu Dhabi T10': [
+    { name: 'Deccan Gladiators', code: 'DG' },
+    { name: 'Delhi Bulls', code: 'DB' },
+    { name: 'Bangla Tigers', code: 'BT' },
+    { name: 'New York Strikers', code: 'NYS' },
+    { name: 'Team Abu Dhabi', code: 'TAD' },
+    { name: 'Morrisville Samp Army', code: 'MSA' }
+  ],
+  'The Hundred': [
+    { name: 'Oval Invincibles', code: 'OI' },
+    { name: 'Trent Rockets', code: 'TR' },
+    { name: 'Manchester Originals', code: 'MO' },
+    { name: 'London Spirit', code: 'LS' },
+    { name: 'Welsh Fire', code: 'WF' },
+    { name: 'Northern Superchargers', code: 'NS' },
+    { name: 'Birmingham Phoenix', code: 'BP' },
+    { name: 'Southern Brave', code: 'SB' }
+  ]
+};
+
+const formats = ['T20', 'T10', 'ODI', 'Test', 'Hundred'];
 
 export default function MatchSetup() {
   const [form, setForm] = useState({
+    league: '',
     teamA: '',
     teamB: '',
     date: '',
     time: '',
+    format: '',
+    series: ''
   });
 
   const [matches, setMatches] = useState([]);
@@ -29,15 +110,20 @@ export default function MatchSetup() {
     e.preventDefault();
     const newMatch = {
       ...form,
-      id: matches.length + 1,
-      logoA: `https://flagcdn.com/w80/${form.teamA}.png`,
-      logoB: `https://flagcdn.com/w80/${form.teamB}.png`,
+      id: Date.now(),
+      logoA: `https://flagcdn.com/w80/${form.teamA.toLowerCase()}.png`,
+      logoB: `https://flagcdn.com/w80/${form.teamB.toLowerCase()}.png`,
     };
     setMatches([...matches, newMatch]);
-    setForm({ teamA: '', teamB: '', date: '', time: '' });
+    setForm({ league: '', teamA: '', teamB: '', date: '', time: '', format: '', series: '' });
   };
 
-  const teamBOptions = countries.filter((c) => c.code !== form.teamA);
+  const handleDelete = (id) => {
+    setMatches(matches.filter(match => match.id !== id));
+  };
+
+  const currentTeams = leagueTeams[form.league] || [];
+  const teamBOptions = currentTeams.filter(team => team.code !== form.teamA);
 
   return (
     <AdminLayout>
@@ -45,17 +131,44 @@ export default function MatchSetup() {
 
       {/* Match Setup Form */}
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-md border border-gray-200">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <select
+            name="league"
+            value={form.league}
+            onChange={handleChange}
+            className="select select-bordered w-full"
+            required
+          >
+            <option value="" disabled>Select League</option>
+            {Object.keys(leagueTeams).map((league) => (
+              <option key={league} value={league}>{league}</option>
+            ))}
+          </select>
+          <select
+            name="format"
+            value={form.format}
+            onChange={handleChange}
+            className="select select-bordered w-full"
+            required
+          >
+            <option value="" disabled>Select Format</option>
+            {formats.map(f => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
           <select
             name="teamA"
             value={form.teamA}
             onChange={handleChange}
-            className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="select select-bordered w-full"
             required
           >
             <option value="" disabled>Select Team A</option>
-            {countries.map((c) => (
-              <option key={c.code} value={c.code}>{c.name}</option>
+            {currentTeams.map(team => (
+              <option key={team.code} value={team.code}>{team.name}</option>
             ))}
           </select>
 
@@ -63,21 +176,21 @@ export default function MatchSetup() {
             name="teamB"
             value={form.teamB}
             onChange={handleChange}
-            className="select select-bordered w-full focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="select select-bordered w-full"
             required
           >
             <option value="" disabled>Select Team B</option>
-            {teamBOptions.map((c) => (
-              <option key={c.code} value={c.code}>{c.name}</option>
+            {teamBOptions.map(team => (
+              <option key={team.code} value={team.code}>{team.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <input
             name="date"
             type="date"
-            className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="input input-bordered w-full"
             value={form.date}
             onChange={handleChange}
             required
@@ -86,12 +199,22 @@ export default function MatchSetup() {
           <input
             name="time"
             type="time"
-            className="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="input input-bordered w-full"
             value={form.time}
             onChange={handleChange}
             required
           />
         </div>
+
+        <input
+          name="series"
+          type="text"
+          placeholder="Enter Series Name"
+          className="input input-bordered w-full"
+          value={form.series}
+          onChange={handleChange}
+          required
+        />
 
         <button
           type="submit"
@@ -108,28 +231,34 @@ export default function MatchSetup() {
           <p className="text-sm text-gray-500 italic">No matches scheduled yet.</p>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {matches.map((match) => (
-              <div key={match.id} className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
-                <div className="text-sm text-gray-600 font-semibold mb-2">
-                  {match.date} at {match.time}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col items-center">
-                    <img src={match.logoA} alt={match.teamA} className="w-10 h-10 rounded-full" />
-                    <span className="text-xs mt-1 font-medium">
-                      {countries.find(c => c.code === match.teamA)?.name}
-                    </span>
+            {matches.map((match) => {
+              const teamA = leagueTeams[match.league].find(t => t.code === match.teamA);
+              const teamB = leagueTeams[match.league].find(t => t.code === match.teamB);
+              return (
+                <div key={match.id} className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+                  <div className="text-sm text-gray-600 font-semibold mb-2">
+                    {match.date} at {match.time} | {match.format} | {match.series}
                   </div>
-                  <div className="text-yellow-600 font-bold text-lg">VS</div>
-                  <div className="flex flex-col items-center">
-                    <img src={match.logoB} alt={match.teamB} className="w-10 h-10 rounded-full" />
-                    <span className="text-xs mt-1 font-medium">
-                      {countries.find(c => c.code === match.teamB)?.name}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-center">
+                      <img src={match.logoA} alt={teamA?.name} className="w-10 h-10 rounded-full" />
+                      <span className="text-xs mt-2 font-medium text-gray-800">{teamA?.name}</span>
+                    </div>
+                    <div className="text-yellow-600 font-bold text-lg">VS</div>
+                    <div className="flex flex-col items-center">
+                      <img src={match.logoB} alt={teamB?.name} className="w-10 h-10 rounded-full" />
+                      <span className="text-xs mt-2 font-medium text-gray-800">{teamB?.name}</span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => handleDelete(match.id)}
+                    className="mt-4 text-sm text-red-500 font-semibold hover:underline"
+                  >
+                    ❌ Delete Match
+                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
