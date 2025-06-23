@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+// src/pages/HomePage.jsx
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function HomePage() {
   const location = useLocation();
+  const tickerRef = useRef(null);
 
   const matchesData = [
     {
@@ -68,6 +71,16 @@ export default function HomePage() {
     })
   );
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % timers.length);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [timers.length]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTimers((prev) =>
@@ -85,9 +98,7 @@ export default function HomePage() {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins
-      .toString()
-      .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const navItems = [
@@ -99,20 +110,59 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white font-sans">
       <div className="flex-1 overflow-y-auto p-4 pb-28">
-        <div className="text-center mb-8">
+        <div className="text-center mb-4">
           <h1 className="text-4xl font-extrabold tracking-wide text-yellow-400 drop-shadow-xl">
             <span className="text-green-300">Cricket</span> Wager
           </h1>
           <p className="text-gray-300 text-sm italic mt-1">Predict. Play. Win Big. 🏏</p>
-          <div className="mt-4 text-lg font-semibold text-white flex items-center justify-center gap-2">
-            <span className="animate-ping inline-block w-3 h-3 bg-red-500 rounded-full"></span>
-            <span className="text-yellow-400">Live Matches</span>
+        </div>
+
+        {/* Enhanced Ticker */}
+        <div className="relative mb-6">
+          <div
+            ref={tickerRef}
+            className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-lg border border-white/20 shadow-md mx-auto w-full max-w-xl"
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={timers[currentIndex].id}
+                initial={{ x: 300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -300, opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="p-3 flex items-center justify-between text-white cursor-pointer"
+                onClick={() => {
+                  const matchSection = document.getElementById(`match-${timers[currentIndex].id}`);
+                  matchSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <img src={timers[currentIndex].logoA} alt="" className="w-6 h-6 rounded-full" />
+                  <span className="font-medium text-sm">{timers[currentIndex].teamA}</span>
+                </div>
+                <div className="text-yellow-300 text-xs font-bold px-2">VS</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{timers[currentIndex].teamB}</span>
+                  <img src={timers[currentIndex].logoB} alt="" className="w-6 h-6 rounded-full" />
+                </div>
+                <div className="ml-4 text-xs text-gray-200 text-right">
+                  <div className="text-yellow-400">{timers[currentIndex].seriesName}</div>
+                  <div>{timers[currentIndex].matchFormat} • {timers[currentIndex].time}</div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
+        </div>
+
+        <div className="mt-2 mb-4 text-lg font-semibold text-white flex items-center justify-center gap-2">
+          <span className="animate-ping inline-block w-3 h-3 bg-red-500 rounded-full"></span>
+          <span className="text-yellow-400">Live Matches</span>
         </div>
 
         <div className="flex flex-col gap-6">
           {timers.map((match) => (
             <Link
+              id={`match-${match.id}`}
               key={match.id}
               to={match.id === 1 ? '/match-details' : '#'}
               className="bg-white bg-opacity-10 hover:bg-opacity-20 rounded-xl p-4 transition-all duration-300 border border-white/10 shadow-lg"
