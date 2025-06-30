@@ -119,10 +119,11 @@ export default function HomePage() {
 
         {/* Enhanced Ticker */}
         <div className="relative mb-6">
-          <div
-            ref={tickerRef}
-            className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-lg border border-white/20 shadow-md mx-auto w-full max-w-xl"
-          >
+         <div
+  ref={tickerRef}
+  className="overflow-hidden rounded-xl bg-gradient-to-r from-yellow-500 via-pink-500 to-purple-600 backdrop-blur-lg border border-yellow-400 shadow-lg mx-auto w-full max-w-xl"
+>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={timers[currentIndex].id}
