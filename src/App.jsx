@@ -23,6 +23,8 @@ import Recharge from './pages/User/Recharge';
 import Withdraw from './pages/User/Withdraw';
 import MatchDetails from './pages/User/MatchDetails';
 import UserBetDetails from './pages/Admin/UserBetDetails';
+import UserDetails from './pages/Admin/UserDetails';
+
 
 
 
@@ -57,6 +59,7 @@ function App() {
         <Route path="/admin/match-control" element={<MatchControl />} />
         <Route path="/admin/payment" element={<Payment />} />
         <Route path="/admin/user-bets/:id" element={<UserBetDetails />} />
+        <Route path="/admin/user-details" element={<UserDetails />} />
 
 
       </Routes>

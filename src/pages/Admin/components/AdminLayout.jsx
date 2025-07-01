@@ -6,12 +6,14 @@ import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import LogoutIcon from '@mui/icons-material/Logout';
+import GroupIcon from '@mui/icons-material/Group'; // 👈 Icon for User Details
 
 const navItems = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <DashboardIcon /> },
   { label: 'Match Setup', path: '/admin/match-setup', icon: <SportsCricketIcon /> },
   { label: 'Match Control', path: '/admin/match-control', icon: <SettingsRemoteIcon /> },
   { label: 'Payment', path: '/admin/payment', icon: <PaymentsIcon /> },
+  { label: 'User Details', path: '/admin/user-details', icon: <GroupIcon /> }, // 👈 New Tab
 ];
 
 export default function AdminLayout({ children }) {

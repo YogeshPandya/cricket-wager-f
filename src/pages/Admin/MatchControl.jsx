@@ -11,8 +11,8 @@ export default function MatchControl() {
         id: 1,
         question: 'Who will win the match?',
         options: [
-          { text: 'India', visible: true },
-          { text: 'Australia', visible: true }
+          { text: 'India', visible: true, ratio: 5 },
+          { text: 'Australia', visible: true, ratio: 5 }
         ],
         visible: true,
         result: ''
@@ -29,7 +29,7 @@ export default function MatchControl() {
       {
         id: newId,
         question: '',
-        options: [{ text: '', visible: true }],
+        options: [{ text: '', visible: true, ratio: 5 }],
         visible: true,
         result: ''
       }
@@ -57,7 +57,7 @@ export default function MatchControl() {
   const addOption = (qId) => {
     const updated = questions.map(q => {
       if (q.id === qId) {
-        return { ...q, options: [...q.options, { text: '', visible: true }] };
+        return { ...q, options: [...q.options, { text: '', visible: true, ratio: 5 }] };
       }
       return q;
     });
@@ -82,16 +82,14 @@ export default function MatchControl() {
   };
 
   const saveToBackend = () => {
-    console.log('Saving for:', selectedMatch);
-    console.log('Data:', questions);
-    alert(`Saved questions for ${selectedMatch}`);
+    localStorage.setItem('matchControlData', JSON.stringify(questionsMap));
+    alert(`✅ Saved questions for ${selectedMatch}`);
   };
 
   return (
     <AdminLayout>
       <h1 className="text-2xl font-bold mb-6 text-green-700">Match Control</h1>
 
-      {/* Match Selector */}
       <div className="mb-6">
         <label className="text-sm text-gray-700 font-medium mr-2">Select Match:</label>
         <select
@@ -136,13 +134,23 @@ export default function MatchControl() {
 
             <div className="space-y-3">
               {q.options.map((opt, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={i} className="flex flex-wrap gap-2 items-center">
                   <input
                     type="text"
                     value={opt.text}
                     onChange={(e) => updateOption(q.id, i, 'text', e.target.value)}
                     placeholder={`Option ${i + 1}`}
-                    className="w-2/4 px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className="w-1/3 px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                  <input
+                    type="number"
+                    value={opt.ratio}
+                    onChange={(e) =>
+                      updateOption(q.id, i, 'ratio', Math.max(1, Math.min(10, Number(e.target.value))))}
+                    placeholder="Ratio (1-10)"
+                    min={1}
+                    max={10}
+                    className="w-1/4 px-3 py-2 border border-blue-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input
