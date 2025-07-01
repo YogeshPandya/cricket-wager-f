@@ -27,7 +27,7 @@ export default function Payment() {
         user: 'Amit Singh',
         type: 'Recharge',
         amount: 1000,
-        status: 'Failed',
+        status: 'Pending',
         time: '2025-06-23 09:30 AM'
       }
     ];
@@ -45,6 +45,14 @@ export default function Payment() {
       default:
         return 'text-gray-600';
     }
+  };
+
+  const handleApprove = (id) => {
+    setPayments((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, status: 'Success' } : p
+      )
+    );
   };
 
   return (
@@ -79,7 +87,12 @@ export default function Payment() {
                   <td className="px-4 py-2 space-x-2">
                     <button className="text-blue-600 hover:underline text-sm">View</button>
                     {payment.status === 'Pending' && (
-                      <button className="text-green-600 hover:underline text-sm">Approve</button>
+                      <button
+                        onClick={() => handleApprove(payment.id)}
+                        className="text-green-600 hover:underline text-sm"
+                      >
+                        Approve
+                      </button>
                     )}
                   </td>
                 </tr>
