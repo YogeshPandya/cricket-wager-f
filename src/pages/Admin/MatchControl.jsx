@@ -142,16 +142,25 @@ export default function MatchControl() {
                     placeholder={`Option ${i + 1}`}
                     className="w-1/3 px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   />
-                  <input
-                    type="number"
-                    value={opt.ratio}
-                    onChange={(e) =>
-                      updateOption(q.id, i, 'ratio', Math.max(1, Math.min(10, Number(e.target.value))))}
-                    placeholder="Ratio (1-10)"
-                    min={1}
-                    max={10}
-                    className="w-1/4 px-3 py-2 border border-blue-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
+              <input
+  type="number"
+  value={opt.ratio}
+  onChange={(e) => updateOption(q.id, i, 'ratio', e.target.value)}
+  onBlur={(e) => {
+    const val = Number(e.target.value);
+    if (isNaN(val) || val < 1 || val > 10) {
+      alert('❗ Ratio must be a number between 1 and 10');
+      updateOption(q.id, i, 'ratio', 5); // Reset to default if invalid
+    } else {
+      updateOption(q.id, i, 'ratio', val);
+    }
+  }}
+  placeholder="Ratio (1-10)"
+  min={1}
+  max={10}
+  className="w-1/4 px-3 py-2 border border-blue-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+/>
+
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input
                       type="checkbox"
