@@ -86,6 +86,32 @@ export default function MatchControl() {
     alert(`✅ Saved questions for ${selectedMatch}`);
   };
 
+  const getTotalBetForOption = (match, questionId, optionText) => {
+    const raw = localStorage.getItem('bettingData');
+    if (!raw) return 0;
+    const allBets = JSON.parse(raw);
+    return allBets
+      .filter(bet =>
+        bet.match === match &&
+        bet.questionId === questionId &&
+        bet.optionText === optionText
+      )
+      .reduce((sum, bet) => sum + Number(bet.amount), 0);
+  };
+
+  const getPayoutIfOptionWins = (match, questionId, optionText, ratio) => {
+    const raw = localStorage.getItem('bettingData');
+    if (!raw) return 0;
+    const allBets = JSON.parse(raw);
+    return allBets
+      .filter(bet =>
+        bet.match === match &&
+        bet.questionId === questionId &&
+        bet.optionText === optionText
+      )
+      .reduce((sum, bet) => sum + Number(bet.amount) * ratio, 0);
+  };
+
   return (
     <AdminLayout>
       <h1 className="text-2xl font-bold mb-6 text-green-700">Match Control</h1>
@@ -134,7 +160,7 @@ export default function MatchControl() {
 
             <div className="space-y-3">
               {q.options.map((opt, i) => (
-                <div key={i} className="flex flex-wrap gap-2 items-center">
+                <div key={i} className="flex flex-wrap gap-4 items-start w-full">
                   <input
                     type="text"
                     value={opt.text}
@@ -142,16 +168,31 @@ export default function MatchControl() {
                     placeholder={`Option ${i + 1}`}
                     className="w-1/3 px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   />
+
                   <input
                     type="number"
                     value={opt.ratio}
-                    onChange={(e) =>
-                      updateOption(q.id, i, 'ratio', Math.max(1, Math.min(10, Number(e.target.value))))}
+                    onChange={(e) => updateOption(q.id, i, 'ratio', e.target.value)}
+                    onBlur={(e) => {
+                      const val = Number(e.target.value);
+                      if (isNaN(val) || val < 1 || val > 10) {
+                        alert('❗ Ratio must be a number between 1 and 10');
+                        updateOption(q.id, i, 'ratio', 5);
+                      } else {
+                        updateOption(q.id, i, 'ratio', val);
+                      }
+                    }}
                     placeholder="Ratio (1-10)"
                     min={1}
                     max={10}
-                    className="w-1/4 px-3 py-2 border border-blue-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-1/6 px-3 py-2 border border-blue-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
+
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <div>💰 Total Bet: ₹{getTotalBetForOption(selectedMatch, q.id, opt.text)}</div>
+                    <div>💸 Total Payout: ₹{getPayoutIfOptionWins(selectedMatch, q.id, opt.text, opt.ratio)}</div>
+                  </div>
+
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input
                       type="checkbox"
@@ -161,6 +202,7 @@ export default function MatchControl() {
                     />
                     Show
                   </label>
+
                   <button
                     onClick={() => deleteOption(q.id, i)}
                     className="text-red-500 text-sm font-semibold hover:underline"
