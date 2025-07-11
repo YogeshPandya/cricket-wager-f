@@ -1,6 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios'; // ✅ import axios
 import cricketLogo from '../../assets/cricket-logo.png'; // adjust path if needed
 
 export default function LoginPage() {
@@ -10,20 +11,40 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!username.trim() || !password.trim()) {
-      setError('Username and Password are required.');
-      return;
+  if (!username.trim() || !password.trim()) {
+    setError('Username and Password are required.');
+    return;
+  }
+
+  setError('');
+
+  try {
+    const res = await axios.post('http://localhost:5000/user/login', {
+      username,
+      password,
+    });
+
+    if (res.data.status) {
+      // ✅ Save token in localStorage
+      localStorage.setItem('access_token', res.data.data.access_token);
+
+      // ✅ Optionally save user info too
+      localStorage.setItem('user', JSON.stringify(res.data.data.user));
+
+      alert('Login successful!');
+      navigate('/home'); // Redirect to your home/dashboard
+    } else {
+      setError('Login failed: ' + res.data.message);
     }
+  } catch (err) {
+    console.error(err);
+    setError('Login failed. Check console for more info.');
+  }
+};
 
-    setError('');
-    // ✅ Perform login logic here...
-
-    // On success
-    navigate("/home");
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 to-gray-900 text-white px-4">
@@ -65,7 +86,7 @@ export default function LoginPage() {
             required
           />
 
-          {/* ✅ Error Message */}
+          {/* Error Message */}
           {error && (
             <div className="text-red-400 text-sm font-medium">{error}</div>
           )}
