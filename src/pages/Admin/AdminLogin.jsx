@@ -1,20 +1,38 @@
-// src/pages/AdminLogin.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import cricketLogo from '../../assets/cricket-logo.png'; // adjust path if needed
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Perform admin login logic here
+    setError('');
 
-    // On success
-    console.log("Admin Login", { email, password });
-    navigate("/admin/dashboard");
+    try {
+      const res = await axios.post('http://localhost:5000/admin/login', {
+        email,
+        password,
+      });
+
+      if (res.data.status) {
+        // Save token & admin info in localStorage
+        localStorage.setItem('admin_token', res.data.data.access_token);
+        localStorage.setItem('admin_info', JSON.stringify(res.data.data.admin));
+
+        // Redirect to dashboard
+        navigate('/admin/dashboard');
+      } else {
+        setError('Invalid login credentials');
+      }
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Login failed. Please check your email and password.');
+    }
   };
 
   return (
@@ -55,6 +73,8 @@ const AdminLogin = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
           <button
             type="submit"

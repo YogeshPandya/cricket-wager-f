@@ -24,6 +24,7 @@ import Withdraw from './pages/User/Withdraw';
 import MatchDetails from './pages/User/MatchDetails';
 import UserBetDetails from './pages/Admin/UserBetDetails';
 import UserDetails from './pages/Admin/UserDetails';
+import ResetPasswordLogin from './pages/User/ResetPasswordLogin';
 
 
 
@@ -60,6 +61,7 @@ function App() {
         <Route path="/admin/payment" element={<Payment />} />
         <Route path="/admin/user-bets/:id" element={<UserBetDetails />} />
         <Route path="/admin/user-details" element={<UserDetails />} />
+         <Route path="/reset-password-login" element={<ResetPasswordLogin />} />
 
 
       </Routes>
