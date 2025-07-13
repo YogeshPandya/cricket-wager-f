@@ -1,7 +1,8 @@
+// src/pages/Admin/AdminLogin.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
-import cricketLogo from '../../assets/cricket-logo.png'; // adjust path if needed
+import { adminLogin } from '../../services/service'; // ✅ imported service
+import cricketLogo from '../../assets/cricket-logo.png';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -14,17 +15,11 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/admin/login', {
-        email,
-        password,
-      });
+      const res = await adminLogin({ email, password }); // ✅ using service function
 
       if (res.data.status) {
-        // Save token & admin info in localStorage
         localStorage.setItem('admin_token', res.data.data.access_token);
         localStorage.setItem('admin_info', JSON.stringify(res.data.data.admin));
-
-        // Redirect to dashboard
         navigate('/admin/dashboard');
       } else {
         setError('Invalid login credentials');
@@ -38,20 +33,15 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 to-gray-900 text-white px-4">
       <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md p-8 rounded-2xl shadow-xl text-center">
-
-        {/* Logo */}
         <img
           src={cricketLogo}
           alt="Cricket Logo"
           className="w-32 h-32 mx-auto mb-4"
         />
-
-        {/* Title */}
         <h2 className="text-3xl font-bold mb-2">
           <span className="text-green-400">Admin</span>{' '}
           <span className="text-yellow-400">Panel</span>
         </h2>
-
         <h3 className="text-xl font-semibold text-yellow-300 mb-6">
           Login to admin account
         </h3>
