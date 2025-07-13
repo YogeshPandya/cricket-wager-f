@@ -1,6 +1,7 @@
+// src/pages/ResetPasswordLogin.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { resetLoginPassword } from '../../services/service'; // ✅ import service
 
 export default function ResetPasswordLogin() {
   const navigate = useNavigate();
@@ -19,11 +20,7 @@ export default function ResetPasswordLogin() {
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/user/reset-login-password', {
-        username,
-        accessToken,
-        newPassword,
-      });
+      const res = await resetLoginPassword({ username, accessToken, newPassword }); // ✅ use service
 
       setSuccess(res.data.message || 'Password reset successful.');
       setError('');
@@ -87,11 +84,9 @@ export default function ResetPasswordLogin() {
           />
         </div>
 
-        {/* Error or Success Message */}
         {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
         {success && <p className="text-green-300 text-sm font-medium">{success}</p>}
 
-        {/* Submit Button */}
         <button
           onClick={handleReset}
           className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl text-lg shadow transition"

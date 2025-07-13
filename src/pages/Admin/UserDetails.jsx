@@ -1,41 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from './components/AdminLayout';
-
-const users = [
-  {
-    id: 1,
-    name: 'Yogesh Pandya',
-    email: 'yogesh@example.com',
-    phone: '9876543210',
-    registrationDate: '2024-12-01T14:30:00',
-    rechargeHistory: [{ amount: 1000 }, { amount: 500 }],
-    withdrawalHistory: [{ amount: 700 }],
-    bets: [
-      { amount: 500, winAmount: 900 },
-      { amount: 300, winAmount: 0 }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Jane Doe',
-    email: 'jane@example.com',
-    phone: '9123456789',
-    registrationDate: '2025-01-15T10:00:00',
-    rechargeHistory: [{ amount: 1500 }],
-    withdrawalHistory: [],
-    bets: [{ amount: 1000, winAmount: 0 }]
-  }
-];
+import { fetchAllUsers } from '../../services/service'; // ✅ API import
 
 export default function UserDetails() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // ✅ Fetch users from backend
+  useEffect(() => {
+    const getUsers = async () => {
+      try {
+        const data = await fetchAllUsers();
+        console.log('✅ Users fetched:', data.length);
+        setUsers(data); // ✅ Set API data to state
+      } catch (err) {
+        console.error('❌ Error fetching users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    getUsers();
+  }, []);
+
+  // ✅ Search logic
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.phone.includes(searchQuery)
+    (user.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.phoneNumber?.includes(searchQuery)
   );
 
   return (
@@ -53,40 +47,39 @@ export default function UserDetails() {
         />
       </div>
 
-      {/* User Cards */}
-      <div className="space-y-6">
-        {filteredUsers.length === 0 ? (
-          <p className="text-gray-500">No users found.</p>
-        ) : (
-          filteredUsers.map((user) => {
-            const totalRecharge = user.rechargeHistory.reduce((sum, r) => sum + r.amount, 0);
-            const totalWithdrawn = user.withdrawalHistory.reduce((sum, w) => sum + w.amount, 0);
-            const totalBet = user.bets.reduce((sum, b) => sum + b.amount, 0);
-            const totalWin = user.bets.reduce((sum, b) => sum + b.winAmount, 0);
+      {/* Loading State */}
+      {loading ? (
+        <p>Loading users...</p>
+      ) : filteredUsers.length === 0 ? (
+        <p className="text-gray-500">No users found.</p>
+      ) : (
+        <div className="space-y-6">
+          {filteredUsers.map((user) => {
+            const totalRecharge = user.rechargeHistory?.reduce((sum, r) => sum + r.amount, 0) || 0;
+            const totalWithdrawn = user.withdrawalHistory?.reduce((sum, w) => sum + w.amount, 0) || 0;
+            const totalBet = user.bets?.reduce((sum, b) => sum + b.amount, 0) || 0;
+            const totalWin = user.bets?.reduce((sum, b) => sum + b.winAmount, 0) || 0;
             const withdrawableAmount = totalRecharge - totalBet + totalWin - totalWithdrawn;
             const formattedDate = new Date(user.registrationDate).toLocaleString();
 
             return (
-              <div key={user.id} className="bg-white border rounded-xl shadow-md p-6">
-                {/* Top Row: Name + Link */}
+              <div key={user._id} className="bg-white border rounded-xl shadow-md p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
                   <h2 className="text-xl font-semibold text-blue-800">{user.name}</h2>
                   <button
-                    onClick={() => navigate(`/admin/user-bets/${user.id}`)}
+                    onClick={() => navigate(`/admin/user-bets/${user._id}`)}
                     className="text-sm text-yellow-500 underline hover:text-yellow-600 mt-2 sm:mt-0"
                   >
                     View Bet Details →
                   </button>
                 </div>
 
-                {/* User Info */}
                 <div className="grid sm:grid-cols-3 gap-4 text-sm text-gray-700 mb-6">
                   <div><strong>Email:</strong> {user.email}</div>
-                  <div><strong>Phone:</strong> {user.phone}</div>
+                  <div><strong>Phone:</strong> {user.phoneNumber}</div>
                   <div><strong>Registered On:</strong> {formattedDate}</div>
                 </div>
 
-                {/* Financial Summary */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
                     <h3 className="text-gray-600 font-medium mb-1">Total Recharge</h3>
@@ -105,9 +98,9 @@ export default function UserDetails() {
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </AdminLayout>
   );
 }
