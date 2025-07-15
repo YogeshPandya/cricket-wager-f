@@ -48,3 +48,21 @@ export const forgotPassword = (data) => {
 export const resetLoginPassword = (data) => {
   return axios.post(`${BASE_URL}/user/reset-login-password`, data);
 };
+
+export const getUserDetails = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/user/me`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+
+    return await response.json();
+  } catch (err) {
+    console.error('Error fetching user details:', err);
+    return { status: false };
+  }
+};
+
+

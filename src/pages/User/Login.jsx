@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import cricketLogo from '../../assets/cricket-logo.png';
@@ -10,7 +9,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Password show/hide state
+  const [showPassword, setShowPassword] = useState(false);
 
   const toggleShowPassword = () => setShowPassword(prev => !prev);
 
@@ -25,9 +24,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await loginUser({ username, password }); // ✅ use loginUser
+      const res = await loginUser({ username, password });
 
       if (res.data.status) {
+        // ✅ Store token with correct key
         localStorage.setItem('access_token', res.data.data.access_token);
         localStorage.setItem('user', JSON.stringify(res.data.data.user));
 
@@ -67,7 +67,7 @@ export default function LoginPage() {
 
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'} // toggle type here
+              type={showPassword ? 'text' : 'password'}
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
