@@ -6,7 +6,6 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ReceiptIcon from '@mui/icons-material/Receipt';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import FeedbackIcon from '@mui/icons-material/Feedback';
@@ -30,7 +29,6 @@ export default function AccountPage() {
   const accountOptions = [
     { label: 'Recharge Records', icon: <ReceiptIcon />, path: '/recharge-records' },
     { label: 'Withdrawal Records', icon: <ReceiptIcon />, path: '/withdrawal-records' },
-    { label: 'Link Bank Account', icon: <AccountBalanceIcon />, path: '/link-bank' },
     { label: 'User Information', icon: <PersonIcon />, path: '/user-info' },
     { label: 'Reset Password', icon: <LockResetIcon />, path: '/reset-password' },
     { label: 'My Feedback', icon: <FeedbackIcon />, path: '/feedback' },

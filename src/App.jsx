@@ -12,7 +12,6 @@ import MatchControl from './pages/Admin/MatchControl';
 import Payment from './pages/Admin/Payment';
 import RechargeRecords from './pages/User/RechargeRecords';
 import WithdrawalRecords from './pages/User/WithdrawalRecords';
-import LinkBankAccount from './pages/User/LinkBankAccount';
 import UserInfo from './pages/User/UserInfo';
 import ResetPassword from './pages/User/ResetPassword';
 import Feedback from './pages/User/Feedback';
@@ -43,7 +42,6 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/recharge-records" element={<RechargeRecords />} />
         <Route path="/withdrawal-records" element={<WithdrawalRecords />} />
-        <Route path="/link-bank" element={<LinkBankAccount />} />
         <Route path="/user-info" element={<UserInfo />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/feedback" element={<Feedback />} />
