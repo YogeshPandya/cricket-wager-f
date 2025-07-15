@@ -15,6 +15,7 @@ export default function Recharge() {
   const [utr, setUtr] = useState('');
   const [countdown, setCountdown] = useState(600); // 10 minutes
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [popupError, setPopupError] = useState('');
 
   const presetAmounts = [100, 500, 1000, 3000, 5000, 10000];
 
@@ -37,14 +38,22 @@ export default function Recharge() {
     }
 
     setError('');
+    setPopupError('');
     setShowPopup(true);
-    setCountdown(600);
+    setCountdown(600); // reset countdown on every open
   };
 
   useEffect(() => {
     if (showPopup && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
+    }
+
+    if (showPopup && countdown === 0) {
+      alert('❌ Time expired! Please start the recharge again.');
+      setShowPopup(false);
+      setAmount('');
+      setUtr('');
     }
   }, [countdown, showPopup]);
 
@@ -56,19 +65,21 @@ export default function Recharge() {
 
   const handlePopupSubmit = () => {
     if (!utr.trim()) {
-      alert('Please enter UTR number');
+      setPopupError('❌ Please enter the UTR number');
       return;
     }
 
     setIsSubmitting(true);
+    setPopupError('');
+
     setTimeout(() => {
-      alert(`Recharge of ₹${amount} submitted with UTR: ${utr}`);
+      alert(`✅ Recharge of ₹${amount} submitted.\nPlease wait 5–10 minutes for processing.`);
       setIsSubmitting(false);
       setShowPopup(false);
       setCountdown(600);
       setAmount('');
       setUtr('');
-    }, 3000);
+    }, 2000);
   };
 
   return (
@@ -126,8 +137,7 @@ export default function Recharge() {
       {/* Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
-         <div className="bg-white text-black p-4 rounded-2xl w-full max-w-md max-h-screen overflow-hidden shadow-xl relative">
-
+          <div className="bg-white text-black p-4 rounded-2xl w-full max-w-md max-h-screen overflow-hidden shadow-xl relative">
             <button
               onClick={() => {
                 setShowPopup(false);
@@ -154,7 +164,10 @@ export default function Recharge() {
               <input
                 type="text"
                 value={utr}
-                onChange={(e) => setUtr(e.target.value)}
+                onChange={(e) => {
+                  setUtr(e.target.value);
+                  setPopupError('');
+                }}
                 placeholder="e.g. 1234567890"
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
@@ -169,9 +182,20 @@ export default function Recharge() {
               <img src={upiLogo} alt="UPI" className="h-8" />
             </div>
 
-            <p className="text-sm text-red-600 mb-3 text-center font-medium">
-              ⏱ Time remaining: {formatTime(countdown)}
+            {/* Error or Status Message */}
+            {popupError && (
+              <p className="text-red-600 text-sm text-center font-semibold mb-2">{popupError}</p>
+            )}
+
+            <p className="text-center text-sm text-gray-700 font-semibold mb-2">
+              ⏱ Time remaining: <span className="text-black">{formatTime(countdown)}</span>
             </p>
+
+            {isSubmitting && (
+              <p className="text-green-600 text-sm text-center font-semibold animate-pulse mb-2">
+                ✅ Please wait 5–10 minutes for processing...
+              </p>
+            )}
 
             <button
               onClick={handlePopupSubmit}
@@ -180,12 +204,6 @@ export default function Recharge() {
             >
               Submit
             </button>
-
-            {isSubmitting && (
-              <p className="text-center text-blue-600 font-semibold text-sm animate-pulse">
-                Please wait, checking UTR Number...
-              </p>
-            )}
           </div>
         </div>
       )}
