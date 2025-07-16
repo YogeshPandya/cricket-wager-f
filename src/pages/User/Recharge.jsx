@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { submitRecharge } from '../../services/service';
 
-// Import UPI app logos
 import gpayLogo from '../../assets/gpay.png';
 import phonepeLogo from '../../assets/phonepe.png';
 import paytmLogo from '../../assets/paytm.png';
@@ -13,7 +13,7 @@ export default function Recharge() {
   const [error, setError] = useState('');
   const [showPopup, setShowPopup] = useState(false);
   const [utr, setUtr] = useState('');
-  const [countdown, setCountdown] = useState(600); // 10 minutes
+  const [countdown, setCountdown] = useState(600);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [popupError, setPopupError] = useState('');
 
@@ -26,12 +26,10 @@ export default function Recharge() {
 
   const handleRecharge = () => {
     const numericAmount = Number(amount);
-
     if (!amount || isNaN(numericAmount)) {
       setError('Please enter a valid amount');
       return;
     }
-
     if (numericAmount < 100) {
       setError('Minimum amount is ₹100');
       return;
@@ -40,7 +38,7 @@ export default function Recharge() {
     setError('');
     setPopupError('');
     setShowPopup(true);
-    setCountdown(600); // reset countdown on every open
+    setCountdown(600);
   };
 
   useEffect(() => {
@@ -48,7 +46,6 @@ export default function Recharge() {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
     }
-
     if (showPopup && countdown === 0) {
       alert('❌ Time expired! Please start the recharge again.');
       setShowPopup(false);
@@ -62,25 +59,46 @@ export default function Recharge() {
     const secRemain = sec % 60;
     return `${min.toString().padStart(2, '0')}:${secRemain.toString().padStart(2, '0')}`;
   };
+const handlePopupSubmit = async () => {
+  const isValidUTR = /^[a-zA-Z0-9]{8,20}$/.test(utr.trim());
 
-  const handlePopupSubmit = () => {
-    if (!utr.trim()) {
-      setPopupError('❌ Please enter the UTR number');
-      return;
-    }
+  if (!utr.trim()) {
+    setPopupError('❌ Please enter the UTR number');
+    return;
+  }
 
-    setIsSubmitting(true);
-    setPopupError('');
+  if (!isValidUTR) {
+    setPopupError('❌ UTR should be 8–20 characters and alphanumeric (no special characters)');
+    return;
+  }
 
-    setTimeout(() => {
+  setIsSubmitting(true);
+  setPopupError('');
+
+  try {
+    const res = await submitRecharge(Number(amount), utr);
+
+    if (res.status) {
       alert(`✅ Recharge of ₹${amount} submitted.\nPlease wait 5–10 minutes for processing.`);
-      setIsSubmitting(false);
       setShowPopup(false);
       setCountdown(600);
       setAmount('');
       setUtr('');
-    }, 2000);
-  };
+    } else {
+      if (res.message === 'UTR_ALREADY_USED') {
+        setPopupError('❌ This UTR number has already been used. Please check and try again.');
+      } else {
+        setPopupError('❌ Failed to submit recharge. Try again later.');
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    setPopupError('❌ Something went wrong. Try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white p-4">
@@ -134,7 +152,6 @@ export default function Recharge() {
         </ul>
       </div>
 
-      {/* Popup */}
       {showPopup && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 px-4">
           <div className="bg-white text-black p-4 rounded-2xl w-full max-w-md max-h-screen overflow-hidden shadow-xl relative">
@@ -173,7 +190,6 @@ export default function Recharge() {
               />
             </div>
 
-            {/* UPI App Logos */}
             <div className="text-sm text-gray-700 mb-2 font-medium text-center">Use any UPI app like:</div>
             <div className="flex justify-center gap-4 mb-4">
               <img src={gpayLogo} alt="GPay" className="h-8" />
@@ -182,7 +198,6 @@ export default function Recharge() {
               <img src={upiLogo} alt="UPI" className="h-8" />
             </div>
 
-            {/* Error or Status Message */}
             {popupError && (
               <p className="text-red-600 text-sm text-center font-semibold mb-2">{popupError}</p>
             )}
