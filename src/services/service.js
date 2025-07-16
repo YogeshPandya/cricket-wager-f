@@ -151,6 +151,30 @@ export const updatePaymentStatus = async (username, utr, status) => {
   return data;
 };
 
+// src/services/service.js
+
+export const fetchRechargeHistory = async () => {
+  const token = localStorage.getItem('access_token'); // ✅ not 'token'
+  if (!token) {
+    console.warn('No access token');
+    return [];
+  }
+
+  try {
+    const response = await axios.get(`${BASE_URL}/user/recharge-history`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data.data.rechargeHistory;
+  } catch (err) {
+    console.error('Failed to fetch recharge history:', err.response?.data || err.message);
+    return [];
+  }
+};
+
+
+
 
 
 
