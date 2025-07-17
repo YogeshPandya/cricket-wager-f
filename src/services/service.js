@@ -173,6 +173,104 @@ export const fetchRechargeHistory = async () => {
   }
 };
 
+// Submit withdrawal request
+// ❌ Replace your current submitWithdrawal with:
+export const submitWithdrawal = async (amount, upiId, holderName) => {
+  const token = getAuthToken();
+  try {
+    const res = await fetch(`${BASE_URL}/user/withdraw`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ amount, upiId, holderName }),
+    });
+
+    const data = await res.json();
+
+    // ✅ Add this check:
+    if (!res.ok) {
+      return {
+        status: false,
+        message: data?.message || data?.error || 'Withdrawal request failed'
+      };
+    }
+
+    return data;
+  } catch (err) {
+    console.error('Withdraw API error:', err);
+    return { status: false, message: 'Withdraw request failed' };
+  }
+};
+
+// ✅ Fetch All Withdrawal Requests (admin use)
+export const fetchAllWithdrawRequests = async () => {
+  const token = localStorage.getItem('access_token');
+
+  try {
+    const response = await fetch(`${BASE_URL}/user/admin/withdrawals`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Failed to fetch withdrawal requests');
+    }
+
+    return {
+      status: true,
+      data: Array.isArray(data?.data) ? data.data : [], // ✅ correct structure
+    };
+  } catch (error) {
+    console.error('Fetch withdraw requests error:', error.message);
+    return {
+      status: false,
+      data: [],
+    };
+  }
+};
+
+
+
+
+
+export const updateWithdrawStatus = async (username, createdAt, status) => {
+  const token = localStorage.getItem('access_token');
+
+  try {
+    const response = await fetch('http://localhost:5000/user/admin/withdrawal-status', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ username, createdAt, status }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Failed to update withdrawal status');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Update withdraw status error:', error.message);
+    throw error;
+  }
+};
+
+
+
+
+
+
+
+
 
 
 

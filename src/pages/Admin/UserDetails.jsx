@@ -55,7 +55,10 @@ export default function UserDetails() {
       ) : (
         <div className="space-y-6">
           {filteredUsers.map((user) => {
-            const totalRecharge = user.rechargeHistory?.reduce((sum, r) => sum + r.amount, 0) || 0;
+         const totalRecharge = user.rechargeHistory
+  ?.filter((r) => r.status === 'Success') // 👈 Filter only approved
+  .reduce((sum, r) => sum + r.amount, 0) || 0;
+
             const totalWithdrawn = user.withdrawalHistory?.reduce((sum, w) => sum + w.amount, 0) || 0;
             const totalBet = user.bets?.reduce((sum, b) => sum + b.amount, 0) || 0;
             const totalWin = user.bets?.reduce((sum, b) => sum + b.winAmount, 0) || 0;

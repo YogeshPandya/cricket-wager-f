@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import upiLogo from '../../assets/upi.png';
+import { getUserDetails, submitWithdrawal } from '../../services/service';
 
 export default function Withdraw() {
   const navigate = useNavigate();
@@ -16,16 +16,19 @@ export default function Withdraw() {
   const [holderName, setHolderName] = useState('');
   const [upiError, setUpiError] = useState('');
 
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
+
   useEffect(() => {
     const fetchBalance = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('/api/user/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setBalance(res.data.user.balance);
+        const res = await getUserDetails();
+        if (res.status && res.data?.user?.balance !== undefined) {
+          setBalance(res.data.user.balance);
+        } else {
+          setBalance(0);
+        }
       } catch (err) {
         console.error('Error fetching balance:', err);
         setBalance(0);
@@ -61,10 +64,12 @@ export default function Withdraw() {
     }
 
     setError('');
+    setSubmitError('');
+    setSubmitSuccess('');
     setShowModal(true);
   };
 
-  const handleSubmitUpi = () => {
+  const handleSubmitUpi = async () => {
     const upiRegex = /^[\w.-]+@[\w.-]+$/;
 
     if (!upiId || !upiRegex.test(upiId)) {
@@ -78,24 +83,57 @@ export default function Withdraw() {
     }
 
     setUpiError('');
-    alert(`✅ Withdrawal of ₹${amount} is requested.\nUPI ID: ${upiId}\nName: ${holderName}`);
-    setShowModal(false);
-    setAmount('');
-    setUpiId('');
-    setHolderName('');
+    setSubmitting(true);
+    setSubmitError('');
+    setSubmitSuccess('');
+
+    try {
+      const token = localStorage.getItem('token'); // Assuming token stored here
+      if (!token) throw new Error('User not authenticated');
+
+     const data = await submitWithdrawal(Number(amount), upiId, holderName);
+     
+
+
+      if (data.status) {
+        setSubmitSuccess('Withdrawal request submitted successfully!');
+        setShowModal(false);
+        setAmount('');
+        setUpiId('');
+        setHolderName('');
+        // Optionally refresh balance here
+        const res = await getUserDetails();
+        if (res.status && res.data?.user?.balance !== undefined) {
+          setBalance(res.data.user.balance);
+        }
+      } else {
+        setSubmitError(data.message || 'Withdrawal failed');
+      }
+    } catch (err) {
+      setSubmitError(err.message || 'Withdrawal failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white p-4">
-      <button onClick={() => navigate('/account')} className="text-yellow-300 mb-6 font-semibold text-lg hover:underline">
+      <button
+        onClick={() => navigate('/account')}
+        className="text-yellow-300 mb-6 font-semibold text-lg hover:underline"
+      >
         ← Back
       </button>
 
       <h1 className="text-2xl font-bold mb-2">Withdraw</h1>
 
-      <p className="mb-6 text-yellow-300 font-medium">
-        Available Balance: ₹{loading ? 'Loading...' : balance?.toFixed(2)}
-      </p>
+      {loading ? (
+        <p className="text-yellow-300 font-medium mb-6">Available Balance: Loading...</p>
+      ) : (
+        <p className="text-yellow-300 font-medium mb-6">
+          Available Balance: ₹{balance >= 200 ? balance.toFixed(2) : '0.00'}
+        </p>
+      )}
 
       <div className="mb-3">
         <label className="block mb-2 text-sm font-medium">Enter Amount</label>
@@ -105,18 +143,25 @@ export default function Withdraw() {
           onChange={(e) => {
             setAmount(e.target.value);
             setError('');
+            setSubmitError('');
+            setSubmitSuccess('');
           }}
           placeholder="e.g. 500"
           className="w-full px-4 py-2 rounded-xl text-black text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
         {error && <p className="text-red-400 mt-1 text-sm font-semibold">{error}</p>}
+        {submitError && <p className="text-red-400 mt-1 text-sm font-semibold">{submitError}</p>}
+        {submitSuccess && <p className="text-green-400 mt-1 text-sm font-semibold">{submitSuccess}</p>}
       </div>
 
       <button
         onClick={handleWithdraw}
-        className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl text-lg shadow transition"
+        disabled={loading || submitting}
+        className={`w-full ${
+          loading || submitting ? 'bg-yellow-200 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-300'
+        } text-black font-bold py-3 rounded-xl text-lg shadow transition`}
       >
-        Withdraw Now
+        {submitting ? 'Processing...' : 'Withdraw Now'}
       </button>
 
       <div className="bg-white bg-opacity-10 p-4 rounded-xl text-sm text-white mt-6">
@@ -130,10 +175,11 @@ export default function Withdraw() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm px-4">
-          <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md text-black relative animate-fade-in scale-100 transition-all duration-200 ease-in-out">
+          <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md text-black relative">
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-3 right-4 text-gray-400 hover:text-red-600 text-2xl font-bold"
+              disabled={submitting}
             >
               ✕
             </button>
@@ -159,6 +205,7 @@ export default function Withdraw() {
                 }}
                 placeholder="e.g. rahul@upi"
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                disabled={submitting}
               />
               <p className="text-xs text-gray-500 mt-1 italic">
                 Format: name@bank (e.g. raj@upi, 9876543210@paytm)
@@ -178,6 +225,7 @@ export default function Withdraw() {
                 }}
                 placeholder="e.g. Rahul Sharma"
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                disabled={submitting}
               />
             </div>
 
@@ -185,9 +233,10 @@ export default function Withdraw() {
 
             <button
               onClick={handleSubmitUpi}
+              disabled={submitting}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-2.5 rounded-xl text-sm transition"
             >
-              ✅ Submit & Withdraw
+              {submitting ? 'Submitting...' : '✅ Submit & Withdraw'}
             </button>
 
             <p className="text-xs text-center text-gray-700 mt-4">
