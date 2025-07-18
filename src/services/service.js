@@ -265,6 +265,25 @@ export const updateWithdrawStatus = async (username, createdAt, status) => {
 };
 
 
+export const fetchUserWithdrawals = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    const res = await axios.get(`${BASE_URL}/user/withdraw`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data;
+  } catch (err) {
+    console.error('Failed to fetch withdrawals:', err);
+    return   { status: false, withdrawals: [] }; ;
+  }
+};
+
+
+
+
+
 
 
 
