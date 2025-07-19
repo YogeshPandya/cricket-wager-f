@@ -58,8 +58,12 @@ export default function UserDetails() {
          const totalRecharge = user.rechargeHistory
   ?.filter((r) => r.status === 'Success') // 👈 Filter only approved
   .reduce((sum, r) => sum + r.amount, 0) || 0;
+  
 
-            const totalWithdrawn = user.withdrawalHistory?.reduce((sum, w) => sum + w.amount, 0) || 0;
+          const totalWithdrawn = user.withdrawalHistory
+  ?.filter((w) => w.status === 'Success')
+  .reduce((sum, w) => sum + w.amount, 0) || 0;
+
             const totalBet = user.bets?.reduce((sum, b) => sum + b.amount, 0) || 0;
             const totalWin = user.bets?.reduce((sum, b) => sum + b.winAmount, 0) || 0;
             const withdrawableAmount = totalRecharge - totalBet + totalWin - totalWithdrawn;
@@ -68,7 +72,7 @@ export default function UserDetails() {
             return (
               <div key={user._id} className="bg-white border rounded-xl shadow-md p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                  <h2 className="text-xl font-semibold text-blue-800">{user.name}</h2>
+                  <h2 className="text-xl font-semibold text-blue-800">{user.username}</h2>
                   <button
                     onClick={() => navigate(`/admin/user-bets/${user._id}`)}
                     className="text-sm text-yellow-500 underline hover:text-yellow-600 mt-2 sm:mt-0"

@@ -280,6 +280,29 @@ export const fetchUserWithdrawals = async () => {
   }
 };
 
+export const updateUserInfo = async (data) => {
+  try {
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      console.error('Token not found in localStorage!');
+      throw new Error('Session expired. Please login again.');
+    }
+
+    const response = await axios.patch(`${BASE_URL}/user/update`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Update user info error:', error);
+    throw error.response?.data || { message: 'Something went wrong while updating user info.' };
+  }
+};
+
+
 
 
 

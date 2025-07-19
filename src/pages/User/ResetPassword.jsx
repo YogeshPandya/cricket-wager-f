@@ -1,85 +1,34 @@
-// src/pages/User/ResetPassword.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function ResetPassword() {
+export default function ConfirmReset() {
   const navigate = useNavigate();
 
-  const [mobile, setMobile] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleReset = () => {
-    if (!mobile || !newPassword || !confirmPassword) {
-      setError('Please fill in all fields.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    setError('');
-    alert('Password reset successfully!');
-    navigate('/login');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white p-4">
-      {/* Back Button */}
-      <button onClick={() => navigate('/account')} className="text-yellow-300 mb-6 font-semibold text-lg hover:underline">
-        ← Back
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-green-500 via-green-600 to-gray-900 flex flex-col justify-center items-center px-4">
+      <div className="bg-white text-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-center mb-4">Change Your Password?</h1>
+        <p className="text-center text-gray-600 mb-8">
+          If you choose <span className="font-semibold text-green-700">"Yes"</span>, you’ll be logged out and redirected to reset your password.
+        </p>
 
-      {/* Page Title */}
-      <h1 className="text-2xl font-bold mb-6">Reset Password</h1>
-
-      {/* Form Fields */}
-      <div className="space-y-4">
-        <div>
-          <label className="block mb-1 text-sm font-medium">Mobile Number</label>
-          <input
-            type="tel"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-            placeholder="Enter mobile number"
-            className="w-full px-4 py-2 rounded-xl text-black font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          />
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => {
+              localStorage.removeItem('token'); // Optional: clear token if you're using it
+              navigate('/forgot-password');
+            }}
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2.5 px-6 rounded-xl shadow-md transition-all duration-200"
+          >
+            Yes, Reset
+          </button>
+          <button
+            onClick={() => navigate('/account')}
+            className="bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-md transition-all duration-200"
+          >
+            No, Go Back
+          </button>
         </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium">New Password</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Enter new password"
-            className="w-full px-4 py-2 rounded-xl text-black font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium">Confirm Password</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm new password"
-            className="w-full px-4 py-2 rounded-xl text-black font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          />
-        </div>
-
-        {error && <p className="text-red-400 text-sm font-medium">{error}</p>}
-
-        {/* Submit Button */}
-        <button
-          onClick={handleReset}
-          className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl text-lg shadow transition"
-        >
-          Reset Password
-        </button>
       </div>
     </div>
   );

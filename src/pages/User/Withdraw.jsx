@@ -88,7 +88,7 @@ export default function Withdraw() {
     setSubmitSuccess('');
 
     try {
-      const token = localStorage.getItem('token'); // Assuming token stored here
+      const token = localStorage.getItem('access_token'); // Assuming token stored here
       if (!token) throw new Error('User not authenticated');
 
      const data = await submitWithdrawal(Number(amount), upiId, holderName);

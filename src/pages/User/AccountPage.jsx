@@ -53,7 +53,7 @@ export default function AccountPage() {
           setUser({
             ...res.data.user,
             profilePic: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              res.data.user.name
+              res.data.user.username
             )}&background=random`,
           });
         } else {
@@ -82,7 +82,7 @@ export default function AccountPage() {
             className="w-20 h-20 rounded-full border-2 border-yellow-300"
           />
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-yellow-300">{user.name}</h2>
+            <h2 className="text-xl font-bold text-yellow-300">{user.username}</h2>
             <p className="text-base text-white flex items-center mt-1">
               <AccountBalanceWalletIcon className="mr-1" />
               Balance: ₹{user.balance?.toFixed(2) ?? '0.00'}
