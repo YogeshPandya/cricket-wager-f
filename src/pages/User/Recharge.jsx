@@ -169,6 +169,9 @@ const handlePopupSubmit = async () => {
             <p className="text-sm mb-4 text-center">
               Scan the QR code below and complete the payment of <strong>₹{amount}</strong>. Enter the UTR number below after payment.
             </p>
+            <p className="text-xs text-red-600 text-center font-semibold mb-4">
+  ⚠️ Important: Please pay the exact amount. If you pay more or less, your recharge will be rejected, and you will be responsible. Double-check before proceeding.
+</p>
 
             <img
               src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=example@upi&pn=CricketWager"

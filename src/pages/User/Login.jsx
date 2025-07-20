@@ -38,7 +38,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error(err);
-      setError('Login failed. Check console for more info.');
+      setError('Login failed. Check username and password');
     }
   };
 

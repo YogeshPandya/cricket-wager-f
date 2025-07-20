@@ -72,7 +72,13 @@ export default function UserDetails() {
             return (
               <div key={user._id} className="bg-white border rounded-xl shadow-md p-6">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                  <h2 className="text-xl font-semibold text-blue-800">{user.username}</h2>
+                 <h2 className="text-xl font-semibold text-blue-800">
+  {user.username}{' '}
+  <span className="text-sm text-green-600 font-medium ml-2">
+    Current Balance: ₹{user.balance ?? 0}
+  </span>
+</h2>
+
                   <button
                     onClick={() => navigate(`/admin/user-bets/${user._id}`)}
                     className="text-sm text-yellow-500 underline hover:text-yellow-600 mt-2 sm:mt-0"

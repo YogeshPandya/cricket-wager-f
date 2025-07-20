@@ -44,6 +44,9 @@ export default function Help() {
 
       {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
+      <p className="text-sm text-yellow-200 mb-6">
+  Once you submit your help request, our team will review it and respond within 24 hours. You will receive a reply on your registered email.
+</p>
 
       {/* Help Form */}
       <form
