@@ -118,7 +118,7 @@ export default function MatchDetails() {
           >
             <span>{opt}</span>
             <span className="ml-3 inline-block bg-yellow-400 text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
-  {ratios[idx]}X
+  {ratios[idx]}
 </span>
 
           </button>
