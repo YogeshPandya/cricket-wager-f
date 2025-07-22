@@ -8,6 +8,7 @@ export default function MatchDetails() {
   const [questionText, setQuestionText] = useState('');
   const [amount, setAmount] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [selectedRatio, setSelectedRatio] = useState(null);
 
   const indiaRatio = 5;
   const australiaRatio = 5;
@@ -20,11 +21,12 @@ export default function MatchDetails() {
     { id: 4, question: 'Who will hit most sixes?', options: ['India', 'Australia'] },
   ];
 
-  const handleOptionClick = (question, option) => {
+  const handleOptionClick = (question, option,ratio) => {
     setSelectedOption(option);
     setQuestionText(question);
     setAmount('');
     setErrorMsg('');
+      setSelectedRatio(ratio);
     setShowPopup(true);
   };
 
@@ -97,22 +99,35 @@ export default function MatchDetails() {
         </div>
       ) : (
         <div className="space-y-6">
-          {questions.map((q) => (
-            <div key={q.id} className="bg-white bg-opacity-10 p-6 rounded-2xl shadow-md border border-white/20">
-              <h3 className="text-yellow-300 text-lg font-semibold mb-4">{q.question}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {q.options.map((opt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleOptionClick(q.question, opt)}
-                    className="bg-white bg-opacity-20 hover:bg-yellow-400 hover:text-black text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-md"
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+      {questions.map((q) => {
+  const numOptions = q.options.length;
+  const ratios = numOptions === 2 ? [5, 5]
+                : numOptions === 3 ? [4, 3, 3]
+                : numOptions === 4 ? [3, 4, 2, 1]
+                : Array(numOptions).fill(Math.floor(10 / numOptions));
+
+  return (
+    <div key={q.id} className="bg-white bg-opacity-10 p-6 rounded-2xl shadow-md border border-white/20">
+      <h3 className="text-yellow-300 text-lg font-semibold mb-4">{q.question}</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {q.options.map((opt, idx) => (
+          <button
+            key={idx}
+            onClick={() => handleOptionClick(q.question, opt, ratios[idx])}
+            className="bg-white bg-opacity-20 hover:bg-yellow-400 hover:text-black text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-md flex justify-between items-center px-4"
+          >
+            <span>{opt}</span>
+            <span className="ml-3 inline-block bg-yellow-400 text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
+  {ratios[idx]}X
+</span>
+
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+})}
+
         </div>
       )}
 
@@ -122,6 +137,9 @@ export default function MatchDetails() {
             <h2 className="text-2xl font-bold text-yellow-300 mb-4">Confirm Your Bet</h2>
             <p className="mb-2 text-sm">Question: <span className="font-semibold">{questionText}</span></p>
             <p className="mb-4 text-sm">Selected Option: <span className="font-semibold">{selectedOption}</span></p>
+            <p className="mb-2 text-sm">
+  Rate: <span className="font-semibold text-yellow-400">{selectedRatio}</span>
+</p>
 
             <label className="block mb-2 text-sm font-medium">Enter Amount (₹)</label>
             <input
