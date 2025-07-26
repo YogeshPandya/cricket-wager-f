@@ -16,6 +16,8 @@ export default function Recharge() {
   const [countdown, setCountdown] = useState(600);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [popupError, setPopupError] = useState('');
+  const [popupSuccess, setPopupSuccess] = useState('');
+
 
   const presetAmounts = [100, 500, 1000, 3000, 5000, 10000];
 
@@ -78,13 +80,19 @@ const handlePopupSubmit = async () => {
   try {
     const res = await submitRecharge(Number(amount), utr);
 
-    if (res.status) {
-      alert(`✅ Recharge of ₹${amount} submitted.\nPlease wait 5–10 minutes for processing.`);
-      setShowPopup(false);
-      setCountdown(600);
-      setAmount('');
-      setUtr('');
-    } else {
+   if (res.status) {
+  setPopupSuccess(`✅ Recharge of ₹${amount} submitted successfully! Please wait 5–10 minutes for processing.`);
+  setTimeout(() => {
+    setPopupSuccess('');
+    window.location.reload(); // or navigate('/recharge') if you're on another page
+  }, 5000); // show for 5 seconds
+
+  setShowPopup(false);
+  setCountdown(600);
+  setAmount('');
+  setUtr('');
+}
+ else {
       if (res.message === 'UTR_ALREADY_USED') {
         setPopupError('❌ This UTR number has already been used. Please check and try again.');
       } else {
@@ -141,6 +149,12 @@ const handlePopupSubmit = async () => {
       >
         Recharge Now
       </button>
+      {popupSuccess && (
+  <p className="text-green-400 text-sm font-semibold text-center mb-6 animate-fade-in">
+    {popupSuccess}
+  </p>
+)}
+
 
       <div className="bg-white bg-opacity-10 p-4 rounded-xl text-sm text-white">
         <h2 className="text-yellow-300 font-bold mb-2">Recharge Rules:</h2>
