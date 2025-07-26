@@ -1,4 +1,3 @@
-// src/pages/User/Feedback.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,7 +8,6 @@ export default function Feedback() {
   const [hoverRating, setHoverRating] = useState(0);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
-
   const [user, setUser] = useState({ username: '', email: '' });
 
   useEffect(() => {
@@ -17,15 +15,49 @@ export default function Feedback() {
     if (stored) setUser(stored);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (!message || rating === 0) {
-      e.preventDefault();
       setError('Please provide a message and rating.');
       return;
     }
 
     setError('');
-    setSubmitted(true);
+    setSubmitted(true); // ✅ Show success message
+
+    try {
+      const response = await fetch('https://formsubmit.co/ajax/shubhamtiwari24092001@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          username: user.username,
+          email: user.email,
+          message,
+          rating,
+          _subject: 'New User Feedback',
+          _template: 'box',
+          _captcha: 'false',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // ✅ Immediately reload
+        window.location.reload();
+      } else {
+        setError(result.message || 'Something went wrong.');
+        setSubmitted(false);
+      }
+    } catch (err) {
+      console.error('Feedback submission error:', err);
+      setError('Something went wrong.');
+      setSubmitted(false);
+    }
   };
 
   return (
@@ -41,13 +73,9 @@ export default function Feedback() {
       {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6">Submit Feedback</h1>
 
-      {/* FormSubmit Form */}
-      <form
-        action="https://formsubmit.co/shubhamtiwari24092001@gmail.com"
-        method="POST"
-        onSubmit={handleSubmit}
-      >
-        {/* Hidden user info */}
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
+        {/* Hidden Inputs */}
         <input type="hidden" name="username" value={user.username} />
         <input type="hidden" name="email" value={user.email} />
         <input type="hidden" name="rating" value={rating} />
@@ -66,7 +94,7 @@ export default function Feedback() {
           />
         </div>
 
-        {/* Star Rating */}
+        {/* Rating */}
         <div className="mb-4">
           <p className="mb-2 text-sm font-medium">Rate Us</p>
           <div className="flex gap-2">
@@ -101,7 +129,14 @@ export default function Feedback() {
           {submitted ? 'Submitted' : 'Submit Feedback'}
         </button>
 
-        {/* FormSubmit config */}
+        {/* ✅ Success Message Just Below Button */}
+        {submitted && !error && (
+          <p className="text-green-400 text-sm font-medium mt-3 text-center">
+            ✅ Thanks for your feedback!
+          </p>
+        )}
+
+        {/* Hidden Config */}
         <input type="hidden" name="_subject" value="New User Feedback" />
         <input type="hidden" name="_captcha" value="false" />
         <input type="hidden" name="_template" value="box" />

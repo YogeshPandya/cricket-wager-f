@@ -79,9 +79,10 @@ export default function MatchDetails() {
         <p className="text-gray-300 text-sm mt-1">Live Match - Place Your Predictions Now!</p>
         <div className="w-24 h-1 bg-yellow-400 mx-auto mt-3 rounded-full" />
       </div>
-
+     
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white bg-opacity-10 p-6 rounded-2xl mb-8 shadow-lg border border-yellow-400">
         <div className="flex flex-row justify-between items-center w-full sm:gap-10 text-center">
+          
           <div className="flex-1">
             <p className="text-yellow-300 text-xl font-bold">India</p>
             <p className="text-white text-lg">{indiaRatio}/10</p>

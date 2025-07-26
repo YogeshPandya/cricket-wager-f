@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 export default function Help() {
   const navigate = useNavigate();
@@ -9,6 +7,7 @@ export default function Help() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const [user, setUser] = useState({ username: '', email: '' });
 
@@ -17,23 +16,54 @@ export default function Help() {
     if (storedUser) setUser(storedUser);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     if (!subject || !message) {
-      e.preventDefault();
       setError('Please enter both subject and message.');
       return;
     }
 
-    toast.success('Your query has been submitted! We will get back to you within 24 hours.');
     setError('');
     setSubmitted(true);
+
+    try {
+      const response = await fetch('https://formsubmit.co/ajax/shubhamtiwari24092001@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          username: user.username,
+          email: user.email,
+          subject,
+          message,
+          _subject: 'New Help Request',
+          _template: 'box',
+          _captcha: 'false',
+        }),
+      });
+
+      if (response.ok) {
+        setSuccessMsg('🙏 Thank you for your patience. Our team will get back to you as soon as possible.');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Something went wrong.');
+        setSubmitted(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Something went wrong.');
+      setSubmitted(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white p-4">
-      {/* Toast Container */}
-      <ToastContainer position="top-center" autoClose={4000} />
-
       {/* Back Button */}
       <button
         onClick={() => navigate('/account')}
@@ -44,17 +74,15 @@ export default function Help() {
 
       {/* Page Title */}
       <h1 className="text-2xl font-bold mb-6">Help & Support</h1>
-      <p className="text-sm text-yellow-200 mb-6">
-  Once you submit your help request, our team will review it and respond within 24 hours. You will receive a reply on your registered email.
+     <p className="text-sm bg-yellow-900/30 border-l-4 border-yellow-400 text-yellow-100 px-4 py-3 rounded-lg mb-6 shadow-md">
+  Once you submit your help request, our support team will carefully review it and get back to you within <span className="font-semibold text-yellow-300">24 hours</span>.  
+  <br />Please check your <span className="italic text-yellow-200">registered email</span> for our response.
 </p>
 
+
       {/* Help Form */}
-      <form
-        action="https://formsubmit.co/shubhamtiwari24092001@gmail.com"
-        method="POST"
-        onSubmit={handleSubmit}
-      >
-        {/* Hidden Fields to include user info */}
+      <form onSubmit={handleSubmit}>
+        {/* Hidden Fields */}
         <input type="hidden" name="username" value={user.username} />
         <input type="hidden" name="email" value={user.email} />
 
@@ -100,10 +128,10 @@ export default function Help() {
           {submitted ? 'Message Sent' : 'Submit'}
         </button>
 
-        {/* FormSubmit Settings */}
-        <input type="hidden" name="_subject" value="New Help Request" />
-        <input type="hidden" name="_template" value="box" />
-        <input type="hidden" name="_captcha" value="false" />
+        {/* ✅ Success Message Below Button */}
+        {successMsg && (
+          <p className="text-green-300 mt-4 text-center text-sm font-semibold">{successMsg}</p>
+        )}
       </form>
 
       {/* FAQ Section */}
