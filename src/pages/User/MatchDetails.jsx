@@ -39,34 +39,21 @@ export default function MatchDetails() {
     setShowPopup(false);
   };
 
-  const getCommissionByRatio = (ratio) => {
-    if (ratio === 1) return 0.18;
-    if (ratio === 2) return 0.15;
-    if (ratio === 3) return 0.12;
-    if (ratio === 4) return 0.10;
-    if (ratio === 5) return 0.08;
-    if (ratio === 6) return 0.06;
-    if (ratio === 7) return 0.05;
-    if (ratio === 8) return 0.04;
-    if (ratio === 9) return 0.03;
-    return 0;
-  };
 
-  const calculatePayout = () => {
-    const amt = parseFloat(amount);
-    if (questionText === 'Who will win the match?') {
-      const ratio = selectedOption === 'India' ? indiaRatio : australiaRatio;
-      const rawMultiplier = 10 / ratio;
-      const commission = getCommissionByRatio(ratio);
-      const finalMultiplier = rawMultiplier * (1 - commission);
-      const payout = amt * finalMultiplier;
-      return `You will get ₹${Math.round(payout)} (${finalMultiplier.toFixed(2)}x return)`;
-    } else {
-      const payout = amt * 2; // Fixed 2x return
-      const finalPayout = payout * 0.9; // 10% commission
-      return `You will get ₹${Math.round(finalPayout)}`;
-    }
-  };
+ const calculatePayout = () => {
+  const amt = parseFloat(amount);
+  if (!amt || !selectedRatio) return "";
+
+  const totalReturn = amt / (selectedRatio / 10); // e.g. ₹50 / (5/10) = ₹100
+  const profit = totalReturn - amt;
+  const commission = profit * 0.2;
+  const finalAmount = totalReturn - commission;
+  const multiplier = finalAmount / amt;
+
+  return `You will get ₹${Math.round(finalAmount)} (${multiplier.toFixed(2)}x return)`;
+};
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-600 to-black text-white p-4 relative font-sans">

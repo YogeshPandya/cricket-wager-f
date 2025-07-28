@@ -187,9 +187,14 @@ export default function Withdraw() {
             <div className="text-center mb-5">
               <img src={upiLogo} alt="upi-logo" className="h-10 mx-auto mb-2" />
               <h2 className="text-2xl font-extrabold text-green-700">Confirm Withdrawal</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                You are withdrawing <span className="font-semibold text-black">₹{amount}</span>
-              </p>
+             <p className="text-sm text-gray-600 mt-1">
+  You are withdrawing <span className="font-semibold text-black">₹{amount}</span>
+</p>
+<p className="text-xs text-green-600 mt-1">
+  After 5% platform fees you will get ₹{(Number(amount) * 0.95).toFixed(2)}
+</p>
+
+
             </div>
 
             <div className="mb-4">
