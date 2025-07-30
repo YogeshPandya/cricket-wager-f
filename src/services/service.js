@@ -1,7 +1,15 @@
 // src/services/service.js
 import axios from 'axios';
+// ✅ Add socket connection for real-time updates
+
 
 const BASE_URL = 'http://localhost:5000'; // Update to your deployed backend URL if needed
+
+import { io } from 'socket.io-client';
+
+export const socket = io(BASE_URL, {
+  transports: ['websocket'], // ensures WebSocket is used
+});
 
 // ✅ Auth Header Helper for Protected Routes
 const getAuthHeader = () => {
@@ -301,6 +309,34 @@ export const updateUserInfo = async (data) => {
     throw error.response?.data || { message: 'Something went wrong while updating user info.' };
   }
 };
+
+//new api
+export const createMatch = async (matchData) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/match/create`, matchData);
+    return response.data.match;
+  } catch (error) {
+    console.error('Error creating match:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getAllMatches = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/match`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching matches:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const deleteMatch = async (id) => {
+  const res = await axios.delete(`http://localhost:5000/match/${id}`);
+  return res.data;
+};
+
+
 
 
 
