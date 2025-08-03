@@ -162,7 +162,7 @@ export default function MatchControl() {
     }
   };
 
-  const updateSingleQuestion = async (id) => {
+  const AddSingleQuestion = async (id) => {
     const matchId = selectedMatch._id;
     const q = questions.find((q) => q.id === id);
     if (!q) return;
@@ -193,7 +193,7 @@ export default function MatchControl() {
           })),
         },
       });
-      alert('✅ Question updated successfully!');
+      alert('✅ Question Add successfully!');
     } catch (err) {
       console.error('❌ Error updating question:', err);
       alert('Failed to update question.');
@@ -368,13 +368,6 @@ export default function MatchControl() {
                     Show
                   </label>
 
-                  <button
-  onClick={() => updateSingleQuestion(q.id)}
-  className="mt-4 mr-4 text-blue-600 text-sm font-semibold hover:underline"
->
-  🛠 Update Question
-</button>
-
 
                   <button
                     onClick={() => deleteOption(q.id, i)}
@@ -405,8 +398,16 @@ export default function MatchControl() {
             </div>
 
             <button
+  onClick={() => AddSingleQuestion(q.id)}
+  className="mt-4 text-green-600 font-bold hover:underline px-4"
+>
+  💾 Save This Question
+</button>
+
+
+            <button
               onClick={() => deleteQuestion(q.id)}
-              className="mt-4 text-red-500 text-sm font-semibold hover:underline"
+              className="mt-4 text-red-500 text-sm font-semibold hover:underline px-4"
             >
               ❌ Delete Question
             </button>
