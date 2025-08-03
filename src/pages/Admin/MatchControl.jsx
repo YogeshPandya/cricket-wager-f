@@ -1,29 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './components/AdminLayout';
-
-const matchList = ['India vs Australia', 'England vs Pakistan', 'New Zealand vs South Africa'];
+import {
+  getAllMatches,
+  saveQuestionsForMatch,
+  getMatchQuestions,
+  deleteQuestion as deleteQuestionFromServer
+} from '../../services/service';
+import socket from '../../socket';
 
 export default function MatchControl() {
-  const [selectedMatch, setSelectedMatch] = useState(matchList[0]);
-  const [questionsMap, setQuestionsMap] = useState({
-    'India vs Australia': [
-      {
-        id: 1,
-        question: 'Who will win the match?',
-        options: [
-          { text: 'India', visible: true, ratio: 5 },
-          { text: 'Australia', visible: true, ratio: 5 }
-        ],
-        visible: true,
-        result: ''
-      }
-    ]
-  });
+  const [matchList, setMatchList] = useState([]);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+  const [questionsMap, setQuestionsMap] = useState({});
 
-  const questions = questionsMap[selectedMatch] || [];
+  const fetchMatchQuestions = async (matchId) => {
+    try {
+      const data = await getMatchQuestions(matchId);
+
+      const formatted = data.map((q, index) => ({
+        id: q._id,
+        _id: q._id,
+        question: q.question,
+        options: q.options.map((opt) => ({
+          _id: opt._id || `${Math.random()}`,
+          text: opt.label || opt.text,
+          ratio: parseInt(opt.ratio?.split?.('/')?.[0]) || 5,
+          visible: opt.visible ?? true,
+        })),
+        visible: q.visible ?? true,
+        result: q.result || '',
+      }));
+
+      setQuestionsMap((prev) => ({
+        ...prev,
+        [matchId]: formatted,
+      }));
+    } catch (err) {
+      console.error(`❌ Error loading questions for match ${matchId}:`, err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+      const data = await getAllMatches();
+      setMatchList(data);
+      for (const match of data) {
+        await fetchMatchQuestions(match._id);
+      }
+    };
+    fetchMatches();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMatch?._id && !questionsMap[selectedMatch._id]) {
+      fetchMatchQuestions(selectedMatch._id);
+    }
+  }, [selectedMatch]);
+
+  useEffect(() => {
+    socket.on('questionUpdated', ({ matchId, question }) => {
+      setQuestionsMap((prev) => {
+        const existing = prev[matchId] || [];
+        const updated = existing.map((q) =>
+          q.id === question._id ? { ...q, ...question } : q
+        );
+        return { ...prev, [matchId]: updated };
+      });
+    });
+
+    socket.on('questionDeleted', ({ matchId, questionId }) => {
+      setQuestionsMap((prev) => {
+        const existing = prev[matchId] || [];
+        const updated = existing.filter((q) => q.id !== questionId);
+        return { ...prev, [matchId]: updated };
+      });
+    });
+
+    return () => {
+      socket.off('questionUpdated');
+      socket.off('questionDeleted');
+    };
+  }, []);
+
+  const questions = questionsMap[selectedMatch?._id] || [];
 
   const handleAddQuestion = () => {
-    const newId = questions.length + 1;
+    const newId = `${Date.now()}`;
     const updated = [
       ...questions,
       {
@@ -31,19 +93,19 @@ export default function MatchControl() {
         question: '',
         options: [{ text: '', visible: true, ratio: 5 }],
         visible: true,
-        result: ''
-      }
+        result: '',
+      },
     ];
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+    setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
   const updateQuestion = (id, key, value) => {
-    const updated = questions.map(q => (q.id === id ? { ...q, [key]: value } : q));
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+    const updated = questions.map((q) => (q.id === id ? { ...q, [key]: value } : q));
+    setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
   const updateOption = (qId, index, key, value) => {
-    const updated = questions.map(q => {
+    const updated = questions.map((q) => {
       if (q.id === qId) {
         const newOptions = [...q.options];
         newOptions[index] = { ...newOptions[index], [key]: value };
@@ -51,21 +113,24 @@ export default function MatchControl() {
       }
       return q;
     });
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+    setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
   const addOption = (qId) => {
-    const updated = questions.map(q => {
+    const updated = questions.map((q) => {
       if (q.id === qId) {
-        return { ...q, options: [...q.options, { text: '', visible: true, ratio: 5 }] };
+        return {
+          ...q,
+          options: [...q.options, { text: '', visible: true, ratio: 5 }],
+        };
       }
       return q;
     });
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+    setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
   const deleteOption = (qId, index) => {
-    const updated = questions.map(q => {
+    const updated = questions.map((q) => {
       if (q.id === qId) {
         const newOptions = [...q.options];
         newOptions.splice(index, 1);
@@ -73,17 +138,108 @@ export default function MatchControl() {
       }
       return q;
     });
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+    setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
-  const deleteQuestion = (id) => {
-    const updated = questions.filter(q => q.id !== id);
-    setQuestionsMap({ ...questionsMap, [selectedMatch]: updated });
+  const deleteQuestion = async (id) => {
+    const q = questions.find((q) => q.id === id);
+    if (!q) return;
+
+    try {
+      await deleteQuestionFromServer(selectedMatch._id, q.id);
+      const updated = questions.filter((q) => q.id !== id);
+      setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
+
+      socket.emit('questionDeleted', {
+        matchId: selectedMatch._id,
+        questionId: q.id,
+      });
+
+      alert('✅ Question deleted successfully!');
+    } catch (err) {
+      console.error('❌ Error deleting question:', err);
+      alert('Failed to delete question from server.');
+    }
   };
 
-  const saveToBackend = () => {
-    localStorage.setItem('matchControlData', JSON.stringify(questionsMap));
-    alert(`✅ Saved questions for ${selectedMatch}`);
+  const updateSingleQuestion = async (id) => {
+    const matchId = selectedMatch._id;
+    const q = questions.find((q) => q.id === id);
+    if (!q) return;
+
+    const payload = {
+      question: q.question,
+      options: q.options.map((opt) => ({
+        label: opt.text,
+        ratio: `${opt.ratio}/10`,
+        visible: opt.visible ?? true,
+      })),
+      visible: q.visible,
+      result: q.result || '',
+    };
+
+    try {
+      await saveQuestionsForMatch(matchId, payload);
+      socket.emit('questionUpdated', {
+        matchId,
+        question: {
+          _id: q.id,
+          ...payload,
+          options: q.options.map((opt) => ({
+            _id: opt._id || `${Math.random()}`,
+            label: opt.text,
+            ratio: `${opt.ratio}/10`,
+            visible: opt.visible ?? true,
+          })),
+        },
+      });
+      alert('✅ Question updated successfully!');
+    } catch (err) {
+      console.error('❌ Error updating question:', err);
+      alert('Failed to update question.');
+    }
+  };
+
+  const saveToBackend = async () => {
+    const matchId = selectedMatch?._id;
+    const questions = questionsMap[matchId] || [];
+
+    try {
+      for (const q of questions) {
+        const payload = {
+          question: q.question,
+          options: q.options.map((opt) => ({
+            label: opt.text,
+            ratio: `${opt.ratio}/10`,
+            visible: opt.visible ?? true,
+          })),
+          visible: q.visible,
+          result: q.result || '',
+        };
+
+        await saveQuestionsForMatch(matchId, payload);
+
+        socket.emit('questionUpdated', {
+          matchId,
+          question: {
+            _id: q.id,
+            ...payload,
+            options: q.options.map((opt) => ({
+              _id: opt._id || `${Math.random()}`,
+              label: opt.text,
+              ratio: `${opt.ratio}/10`,
+              visible: opt.visible ?? true,
+            })),
+          },
+        });
+      }
+
+      localStorage.setItem('matchControlData', JSON.stringify(questionsMap));
+      alert(`✅ Saved all questions for ${selectedMatch.teamA} vs ${selectedMatch.teamB}`);
+    } catch (err) {
+      console.error('❌ Error saving questions:', err);
+      alert('Failed to save questions. Check console for error.');
+    }
   };
 
   const getTotalBetForOption = (match, questionId, optionText) => {
@@ -91,10 +247,11 @@ export default function MatchControl() {
     if (!raw) return 0;
     const allBets = JSON.parse(raw);
     return allBets
-      .filter(bet =>
-        bet.match === match &&
-        bet.questionId === questionId &&
-        bet.optionText === optionText
+      .filter(
+        (bet) =>
+          bet.match === match?._id &&
+          bet.questionId === questionId &&
+          bet.optionText === optionText
       )
       .reduce((sum, bet) => sum + Number(bet.amount), 0);
   };
@@ -104,10 +261,11 @@ export default function MatchControl() {
     if (!raw) return 0;
     const allBets = JSON.parse(raw);
     return allBets
-      .filter(bet =>
-        bet.match === match &&
-        bet.questionId === questionId &&
-        bet.optionText === optionText
+      .filter(
+        (bet) =>
+          bet.match === match?._id &&
+          bet.questionId === questionId &&
+          bet.optionText === optionText
       )
       .reduce((sum, bet) => sum + Number(bet.amount) * ratio, 0);
   };
@@ -118,15 +276,22 @@ export default function MatchControl() {
 
       <div className="mb-6">
         <label className="text-sm text-gray-700 font-medium mr-2">Select Match:</label>
-        <select
-          value={selectedMatch}
-          onChange={(e) => setSelectedMatch(e.target.value)}
-          className="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-green-400"
-        >
-          {matchList.map((match, i) => (
-            <option key={i} value={match}>{match}</option>
-          ))}
-        </select>
+       <select
+  value={selectedMatch?._id || ''}
+  onChange={(e) => {
+    const selected = matchList.find((m) => m._id === e.target.value);
+    setSelectedMatch(selected);
+  }}
+  className="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-green-400"
+>
+  <option value="">Select a match</option>
+  {matchList.map((match) => (
+    <option key={match._id} value={match._id}>
+      {match.teamA} vs {match.teamB}
+    </option>
+  ))}
+</select>
+
       </div>
 
       <button
@@ -204,6 +369,14 @@ export default function MatchControl() {
                   </label>
 
                   <button
+  onClick={() => updateSingleQuestion(q.id)}
+  className="mt-4 mr-4 text-blue-600 text-sm font-semibold hover:underline"
+>
+  🛠 Update Question
+</button>
+
+
+                  <button
                     onClick={() => deleteOption(q.id, i)}
                     className="text-red-500 text-sm font-semibold hover:underline"
                   >
@@ -247,6 +420,10 @@ export default function MatchControl() {
       >
         💾 Save All Changes
       </button>
+
+
+      
     </AdminLayout>
   );
+  
 }

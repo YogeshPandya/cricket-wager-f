@@ -219,7 +219,8 @@ remaining: Math.max(0, Math.floor((getTargetDate(newMatch.date, newMatch.time) -
              key={match._id}
              id={`match-${match._id}`}
 
-              to={match._id === 1 ? '/match-details' : '#'}
+            to={`/match/${match._id}`}
+
               className="bg-white bg-opacity-10 hover:bg-opacity-20 rounded-xl p-4 transition-all duration-300 border border-white/10 shadow-lg"
             >
               <div className="flex justify-between items-center mb-3">
@@ -249,14 +250,22 @@ remaining: Math.max(0, Math.floor((getTargetDate(newMatch.date, newMatch.time) -
               <div className="text-center">
                {match.remaining > 0 ? (
   match.remaining > 86400 ? (
-    <span className="text-gray-300 font-mono text-xs">
-      Starts in: {Math.ceil(match.remaining / 86400)} days
-    </span>
+   <span className="bg-black bg-opacity-40 text-yellow-300 font-semibold px-2 py-1 rounded text-xs font-mono shadow-sm">
+  Starts in: {Math.ceil(match.remaining / 86400)} days
+</span>
+
   ) : (
-    <span className="text-white font-mono text-xs">Starts in: {formatTime(match.remaining)}</span>
+    <span className="bg-black bg-opacity-40 text-yellow-300 font-semibold px-2 py-1 rounded text-xs font-mono shadow-sm">
+  Starts in: {formatTime(match.remaining)}
+</span>
+
   )
 ) : (
-  <span className="text-red-500 font-semibold animate-pulse text-sm">Live</span>
+ <span className="bg-red-600 text-white font-semibold px-2 py-0.5 rounded-full text-xs animate-pulse">
+  Live
+</span>
+
+
 )}
 
               </div>

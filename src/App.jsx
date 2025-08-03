@@ -50,7 +50,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/recharge" element={<Recharge />} />
         <Route path="/withdraw" element={<Withdraw />} />
-         <Route path="/match-details" element={<MatchDetails />} />
+         <Route path="/match/:matchId" element={<MatchDetails />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/admin/match-setup" element={<MatchSetup />} />

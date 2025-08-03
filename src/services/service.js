@@ -336,6 +336,72 @@ export const deleteMatch = async (id) => {
   return res.data;
 };
 
+//new code
+
+export const getQuestions = async (matchId) => {
+  const res = await axios.get(`${BASE_URL}/match/${matchId}/questions`);
+  return res.data;
+};
+
+export const addQuestionToMatch = async (matchId, questionData) => {
+  const res = await axios.post(`${BASE_URL}/match/${matchId}/question`, questionData);
+  return res.data;
+};
+
+// export const editQuestion = async (matchId, questionId, newQuestionText) => {
+//   const res = await axios.put(`${BASE_URL}/match/${matchId}/question/${questionId}`, {
+//     question: newQuestionText,
+//   });
+//   return res.data;
+// };
+
+// export const deleteQuestion = async (matchId, questionId) => {
+//   const res = await axios.delete(`${BASE_URL}/match/${matchId}/question/${questionId}`);
+//   return res.data;
+// };
+
+export const addOptionToQuestion = async (matchId, questionId, optionData) => {
+  const res = await axios.post(`${BASE_URL}/match/${matchId}/question/${questionId}/option`, optionData);
+  return res.data;
+};
+
+export const updateOption = async (matchId, questionId, optionId, body) => {
+  const res = await axios.put(`${BASE_URL}/match/${matchId}/question/${questionId}/option/${optionId}`, body);
+  return res.data;
+};
+
+export const deleteQuestion = async (matchId, questionId) => {
+  return axios.delete(`${BASE_URL}/match/${matchId}/delete-question/${questionId}`);
+};
+
+
+
+
+export const saveQuestionsForMatch = async (matchId, questionData) => {
+  return axios.post(`http://localhost:5000/match/${matchId}/add-question`, questionData);
+};
+
+export const getMatchQuestions = async (matchId) => {
+  const res = await axios.get(`${BASE_URL}/match/${matchId}/questions`);
+  return res.data;
+};
+
+export const editQuestion = (matchId, questionId, payload) => {
+  return axios.patch(
+    `${BASE_URL}/match/${matchId}/edit-question/${questionId}`,
+    payload
+  );
+};
+
+
+
+
+
+
+
+
+
+
 
 
 
