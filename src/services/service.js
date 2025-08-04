@@ -365,10 +365,7 @@ export const addOptionToQuestion = async (matchId, questionId, optionData) => {
   return res.data;
 };
 
-export const updateOption = async (matchId, questionId, optionId, body) => {
-  const res = await axios.put(`${BASE_URL}/match/${matchId}/question/${questionId}/option/${optionId}`, body);
-  return res.data;
-};
+
 
 export const deleteQuestion = async (matchId, questionId) => {
   return axios.delete(`${BASE_URL}/match/${matchId}/delete-question/${questionId}`);
@@ -392,6 +389,17 @@ export const editQuestion = (matchId, questionId, payload) => {
     payload
   );
 };
+
+
+// ✅ Add in service.js
+export const updateOption = async (matchId, questionId, optionId, payload) => {
+  return await axios.patch(
+    `http://localhost:5000/match/${matchId}/edit-option/${questionId}/${optionId}`,
+    payload
+  );
+};
+
+
 
 
 

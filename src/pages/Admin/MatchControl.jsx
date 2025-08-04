@@ -4,7 +4,9 @@ import {
   getAllMatches,
   saveQuestionsForMatch,
   getMatchQuestions,
-  deleteQuestion as deleteQuestionFromServer
+  deleteQuestion as deleteQuestionFromServer, 
+  editQuestion, 
+  updateOption
 } from '../../services/service';
 import socket from '../../socket';
 
@@ -12,19 +14,20 @@ export default function MatchControl() {
   const [matchList, setMatchList] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [questionsMap, setQuestionsMap] = useState({});
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchMatchQuestions = async (matchId) => {
     try {
       const data = await getMatchQuestions(matchId);
 
-      const formatted = data.map((q, index) => ({
+      const formatted = data.map((q) => ({
         id: q._id,
         _id: q._id,
-        question: q.question,
+        question: q.question || '',
         options: q.options.map((opt) => ({
           _id: opt._id || `${Math.random()}`,
-          text: opt.label || opt.text,
-          ratio: parseInt(opt.ratio?.split?.('/')?.[0]) || 5,
+          text: opt.label || opt.text || '',
+          ratio: Number(opt.ratio?.split?.('/')?.[0]) || 5,
           visible: opt.visible ?? true,
         })),
         visible: q.visible ?? true,
@@ -57,30 +60,67 @@ export default function MatchControl() {
     }
   }, [selectedMatch]);
 
-  useEffect(() => {
-    socket.on('questionUpdated', ({ matchId, question }) => {
-      setQuestionsMap((prev) => {
-        const existing = prev[matchId] || [];
-        const updated = existing.map((q) =>
-          q.id === question._id ? { ...q, ...question } : q
+ useEffect(() => {
+  const handleQuestionUpdated = ({ matchId, question }) => {
+    setQuestionsMap(prev => {
+      const existing = prev[matchId] || [];
+      
+      // Check if this is our own update (from updateQuestionWithOptions)
+      const isOurOwnUpdate = existing.some(q => 
+        q.id === question._id && q._localUpdate === true
+      );
+
+      if (isOurOwnUpdate) {
+        // For our own updates, just remove the _localUpdate flag
+        const updated = existing.map(q => 
+          q.id === question._id ? { ...q, _localUpdate: undefined } : q
         );
         return { ...prev, [matchId]: updated };
-      });
-    });
-
-    socket.on('questionDeleted', ({ matchId, questionId }) => {
-      setQuestionsMap((prev) => {
-        const existing = prev[matchId] || [];
-        const updated = existing.filter((q) => q.id !== questionId);
+      } else {
+        // For external updates, merge carefully without overwriting local changes
+        const updated = existing.map(q => {
+          if (q.id === question._id) {
+            // Only update fields that haven't been changed locally
+            const mergedQuestion = {
+              ...q,
+              question: q.question === '' ? (question.question || q.question) : q.question,
+              visible: q.visible === true ? (question.visible ?? q.visible) : q.visible,
+              result: q.result === '' ? (question.result || q.result) : q.result,
+              options: q.options.map((opt, i) => {
+                const serverOpt = question.options[i] || {};
+                return {
+                  ...opt,
+                  text: opt.text === '' ? (serverOpt.label || serverOpt.text || opt.text) : opt.text,
+                  ratio: opt.ratio === 5 ? (Number(serverOpt.ratio?.split?.('/')?.[0]) || opt.ratio) : opt.ratio,
+                  visible: opt.visible === true ? (serverOpt.visible ?? opt.visible) : opt.visible
+                };
+              })
+            };
+            return mergedQuestion;
+          }
+          return q;
+        });
         return { ...prev, [matchId]: updated };
-      });
+      }
     });
+  };
 
-    return () => {
-      socket.off('questionUpdated');
-      socket.off('questionDeleted');
-    };
-  }, []);
+  const handleQuestionDeleted = ({ matchId, questionId }) => {
+    setQuestionsMap(prev => {
+      const existing = prev[matchId] || [];
+      const updated = existing.filter(q => q.id !== questionId);
+      return { ...prev, [matchId]: updated };
+    });
+  };
+
+  socket.on('questionUpdated', handleQuestionUpdated);
+  socket.on('questionDeleted', handleQuestionDeleted);
+
+  return () => {
+    socket.off('questionUpdated', handleQuestionUpdated);
+    socket.off('questionDeleted', handleQuestionDeleted);
+  };
+}, []);
 
   const questions = questionsMap[selectedMatch?._id] || [];
 
@@ -91,7 +131,7 @@ export default function MatchControl() {
       {
         id: newId,
         question: '',
-        options: [{ text: '', visible: true, ratio: 5 }],
+        options: [{ _id: `${Date.now()}-opt`, text: '', visible: true, ratio: 5 }],
         visible: true,
         result: '',
       },
@@ -104,7 +144,7 @@ export default function MatchControl() {
     setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
   };
 
-  const updateOption = (qId, index, key, value) => {
+  const updateOptionLocally = (qId, index, key, value) => {
     const updated = questions.map((q) => {
       if (q.id === qId) {
         const newOptions = [...q.options];
@@ -121,7 +161,7 @@ export default function MatchControl() {
       if (q.id === qId) {
         return {
           ...q,
-          options: [...q.options, { text: '', visible: true, ratio: 5 }],
+          options: [...q.options, { _id: `${Date.now()}-opt`, text: '', visible: true, ratio: 5 }],
         };
       }
       return q;
@@ -193,12 +233,83 @@ export default function MatchControl() {
           })),
         },
       });
-      alert('✅ Question Add successfully!');
+      alert('✅ Question added successfully!');
     } catch (err) {
-      console.error('❌ Error updating question:', err);
-      alert('Failed to update question.');
+      console.error('❌ Error adding question:', err);
+      alert('Failed to add question.');
     }
   };
+const updateQuestionWithOptions = async (matchId, q) => {
+  if (!q._id || isUpdating) {
+    console.warn("❗ Skipped update: Missing q._id or already updating", q);
+    return;
+  }
+
+  setIsUpdating(true);
+
+  try {
+    // Mark as local update first
+    setQuestionsMap(prev => {
+      const existing = prev[matchId] || [];
+      const updated = existing.map(question =>
+        question.id === q.id ? { ...q, _localUpdate: true } : question
+      );
+      return { ...prev, [matchId]: updated };
+    });
+
+    // Update question fields
+    await editQuestion(matchId, q._id, {
+      question: q.question,
+      visible: q.visible,
+      result: q.result || ''
+    });
+
+    // Update each option
+    for (const opt of q.options || []) {
+      try {
+        if (opt._id) {
+          await updateOption(matchId, q._id, opt._id, {
+            label: opt.text,
+            ratio: `${opt.ratio}/10`,
+            visible: opt.visible ?? true
+          });
+        }
+      } catch (err) {
+        console.error("❌ Error updating option:", opt, err);
+      }
+    }
+
+    const payload = {
+      _id: q._id,
+      question: q.question,
+      visible: q.visible,
+      result: q.result || '',
+      options: q.options.map(opt => ({
+        _id: opt._id || `${Math.random()}`,
+        label: opt.text,
+        ratio: `${opt.ratio}/10`,
+        visible: opt.visible ?? true
+      }))
+    };
+
+    console.log('🟢 Emitting socket update:', payload);
+    console.log('🔌 Socket connected:', socket.connected);
+
+    socket.emit('questionUpdated', {
+      matchId,
+      question: { ...payload, _localUpdate: true }
+    });
+
+    alert('✅ Question updated successfully!');
+  } catch (error) {
+    console.error('❌ Error updating question:', error);
+    alert('Failed to update question');
+    fetchMatchQuestions(matchId);
+  } finally {
+    setIsUpdating(false);
+  }
+};
+
 
   const saveToBackend = async () => {
     const matchId = selectedMatch?._id;
@@ -276,27 +387,27 @@ export default function MatchControl() {
 
       <div className="mb-6">
         <label className="text-sm text-gray-700 font-medium mr-2">Select Match:</label>
-       <select
-  value={selectedMatch?._id || ''}
-  onChange={(e) => {
-    const selected = matchList.find((m) => m._id === e.target.value);
-    setSelectedMatch(selected);
-  }}
-  className="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-green-400"
->
-  <option value="">Select a match</option>
-  {matchList.map((match) => (
-    <option key={match._id} value={match._id}>
-      {match.teamA} vs {match.teamB}
-    </option>
-  ))}
-</select>
-
+        <select
+          value={selectedMatch?._id || ''}
+          onChange={(e) => {
+            const selected = matchList.find((m) => m._id === e.target.value);
+            setSelectedMatch(selected || null);
+          }}
+          className="px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-green-400"
+        >
+          <option value="">Select a match</option>
+          {matchList.map((match) => (
+            <option key={match._id} value={match._id}>
+              {match.teamA} vs {match.teamB}
+            </option>
+          ))}
+        </select>
       </div>
 
       <button
         onClick={handleAddQuestion}
-        className="mb-6 px-4 py-2 bg-gradient-to-r from-green-500 to-yellow-400 text-white font-bold rounded hover:from-green-600 hover:to-yellow-500 shadow"
+        disabled={!selectedMatch}
+        className="mb-6 px-4 py-2 bg-gradient-to-r from-green-500 to-yellow-400 text-white font-bold rounded hover:from-green-600 hover:to-yellow-500 shadow disabled:opacity-50"
       >
         ➕ Add New Question
       </button>
@@ -329,7 +440,7 @@ export default function MatchControl() {
                   <input
                     type="text"
                     value={opt.text}
-                    onChange={(e) => updateOption(q.id, i, 'text', e.target.value)}
+                    onChange={(e) => updateOptionLocally(q.id, i, 'text', e.target.value)}
                     placeholder={`Option ${i + 1}`}
                     className="w-1/3 px-4 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   />
@@ -337,14 +448,12 @@ export default function MatchControl() {
                   <input
                     type="number"
                     value={opt.ratio}
-                    onChange={(e) => updateOption(q.id, i, 'ratio', e.target.value)}
+                    onChange={(e) => updateOptionLocally(q.id, i, 'ratio', Number(e.target.value))}
                     onBlur={(e) => {
                       const val = Number(e.target.value);
                       if (isNaN(val) || val < 1 || val > 10) {
                         alert('❗ Ratio must be a number between 1 and 10');
-                        updateOption(q.id, i, 'ratio', 5);
-                      } else {
-                        updateOption(q.id, i, 'ratio', val);
+                        updateOptionLocally(q.id, i, 'ratio', 5);
                       }
                     }}
                     placeholder="Ratio (1-10)"
@@ -362,12 +471,11 @@ export default function MatchControl() {
                     <input
                       type="checkbox"
                       checked={opt.visible}
-                      onChange={() => updateOption(q.id, i, 'visible', !opt.visible)}
+                      onChange={() => updateOptionLocally(q.id, i, 'visible', !opt.visible)}
                       className="accent-yellow-500"
                     />
                     Show
                   </label>
-
 
                   <button
                     onClick={() => deleteOption(q.id, i)}
@@ -397,34 +505,43 @@ export default function MatchControl() {
               />
             </div>
 
-            <button
-  onClick={() => AddSingleQuestion(q.id)}
-  className="mt-4 text-green-600 font-bold hover:underline px-4"
->
-  💾 Save This Question
-</button>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <button
+                onClick={() => AddSingleQuestion(q.id)}
+                className="text-green-600 font-bold hover:underline px-4"
+              >
+                💾 Save This Question
+              </button>
 
+              <button
+                onClick={() => deleteQuestion(q.id)}
+                className="text-red-500 text-sm font-semibold hover:underline px-4"
+              >
+                ❌ Delete Question
+              </button>
 
-            <button
-              onClick={() => deleteQuestion(q.id)}
-              className="mt-4 text-red-500 text-sm font-semibold hover:underline px-4"
-            >
-              ❌ Delete Question
-            </button>
+              {q._id && (
+                <button
+                  onClick={() => updateQuestionWithOptions(selectedMatch._id, q)}
+                  className="text-yellow-400 font-bold hover:underline px-4"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? '⏳ Updating...' : '✏️ Update Question'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
 
-      <button
-        onClick={saveToBackend}
-        className="mt-8 w-full py-3 bg-gradient-to-r from-green-500 to-yellow-400 text-white font-bold rounded-lg hover:from-green-600 hover:to-yellow-500 shadow-md"
-      >
-        💾 Save All Changes
-      </button>
-
-
-      
+      {questions.length > 0 && (
+        <button
+          onClick={saveToBackend}
+          className="mt-8 w-full py-3 bg-gradient-to-r from-green-500 to-yellow-400 text-white font-bold rounded-lg hover:from-green-600 hover:to-yellow-500 shadow-md"
+        >
+          💾 Save All Changes
+        </button>
+      )}
     </AdminLayout>
   );
-  
 }

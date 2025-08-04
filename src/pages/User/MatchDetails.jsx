@@ -15,6 +15,23 @@ export default function MatchDetails() {
   const [loading, setLoading] = useState(true);
   const [matchDetails, setMatchDetails] = useState(null);
 
+  // Helper function to parse ratio and return only the numerator
+  const parseRatioDisplay = (ratio) => {
+    if (typeof ratio === 'number') return ratio;
+    if (typeof ratio === 'string' && ratio.includes('/')) {
+      return ratio.split('/')[0];
+    }
+    return ratio || '5';
+  };
+
+  // Helper function to get full ratio for calculations
+  const parseRatioForCalculation = (ratio) => {
+    if (typeof ratio === 'string' && ratio.includes('/')) {
+      return ratio;
+    }
+    return `${ratio}/10`;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -33,7 +50,20 @@ export default function MatchDetails() {
 
         // Then get questions for this match
         const questionsData = await getMatchQuestions(matchId);
-        setQuestions(questionsData);
+        
+        // Process questions to ensure consistent ratio format
+        const processedQuestions = questionsData.map(q => ({
+          ...q,
+          options: q.options?.map(opt => ({
+            ...opt,
+            label: opt.label || opt.text,
+            ratio: opt.ratio, // Keep original ratio format for calculations
+            displayRatio: parseRatioDisplay(opt.ratio), // Add display format
+            visible: opt.visible
+          })) || []
+        }));
+        
+        setQuestions(processedQuestions);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       } finally {
@@ -48,22 +78,34 @@ export default function MatchDetails() {
         setQuestions((prev) => {
           const exists = prev.find(q => q._id === question._id || q.id === question._id);
           if (exists) {
-            return prev.map(q =>
-              q._id === question._id || q.id === question._id
-                ? {
-                    ...q,
-                    ...question,
-                    options: question.options?.map(opt => ({
-                      ...opt,
-                      text: opt.label,
-                      ratio: parseInt(opt.ratio?.split?.('/')?.[0]) || 5,
-                      visible: opt.visible,
-                    })) || [],
-                  }
-                : q
-            );
+          return prev.map(q =>
+  q._id === question._id || q.id === question._id
+    ? {
+        ...question,
+        options: question.options?.map(opt => ({
+          ...opt,
+          label: opt.label || opt.text,
+          ratio: opt.ratio,
+          displayRatio: parseRatioDisplay(opt.ratio),
+          visible: opt.visible ?? true,
+        })) || [],
+      }
+    : q
+);
+
           } else {
-            return [...prev, question];
+            // Add new question
+            const newQuestion = {
+              ...question,
+              options: question.options?.map(opt => ({
+                ...opt,
+                label: opt.label || opt.text,
+                ratio: opt.ratio,
+                displayRatio: parseRatioDisplay(opt.ratio),
+                visible: opt.visible,
+              })) || []
+            };
+            return [...prev, newQuestion];
           }
         });
       }
@@ -111,7 +153,9 @@ export default function MatchDetails() {
     const amt = parseFloat(amount);
     if (!amt || !selectedOption?.ratio) return "";
     
-    const [num, den] = selectedOption.ratio.split('/').map(Number);
+    // Use the full ratio for calculation
+    const fullRatio = parseRatioForCalculation(selectedOption.ratio);
+    const [num, den] = fullRatio.split('/').map(Number);
     if (!num || !den) return "";
     
     const totalReturn = Math.round((amt * den) / num);
@@ -145,13 +189,13 @@ export default function MatchDetails() {
             <p className="text-yellow-300 text-xl font-bold">
               {matchDetails ? matchDetails.team1 : 'Team 1'}
             </p>
-            <p className="text-white text-lg">5/10</p>
+            <p className="text-white text-lg">5</p>
           </div>
           <div className="flex-1">
             <p className="text-yellow-300 text-xl font-bold">
               {matchDetails ? matchDetails.team2 : 'Team 2'}
             </p>
-            <p className="text-white text-lg">5/10</p>
+            <p className="text-white text-lg">5</p>
           </div>
         </div>
       </div>
@@ -170,7 +214,7 @@ export default function MatchDetails() {
             <div key={q._id} className="bg-white bg-opacity-10 p-6 rounded-2xl shadow-md border border-white/20">
               <h3 className="text-yellow-300 text-lg font-semibold mb-4">{q.question}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {q.options.map((opt) => (
+                {q.options?.map((opt) => (
                   <button
                     key={opt._id}
                     onClick={() => handleOptionClick(q, opt)}
@@ -178,7 +222,7 @@ export default function MatchDetails() {
                   >
                     <span>{opt.label}</span>
                     <span className="ml-3 inline-block bg-yellow-400 text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
-                      {opt.ratio}
+                      {opt.displayRatio || parseRatioDisplay(opt.ratio)}
                     </span>
                   </button>
                 ))}
@@ -195,7 +239,7 @@ export default function MatchDetails() {
             <p className="mb-2 text-sm">Question: <span className="font-semibold">{questionText}</span></p>
             <p className="mb-4 text-sm">Selected Option: <span className="font-semibold">{selectedOption?.label}</span></p>
             <p className="mb-2 text-sm">
-              Rate: <span className="font-semibold text-yellow-400">{selectedOption?.ratio}</span>
+              Rate: <span className="font-semibold text-yellow-400">{selectedOption?.displayRatio || parseRatioDisplay(selectedOption?.ratio)}</span>
             </p>
 
             <label className="block mb-2 text-sm font-medium">Enter Amount (₹)</label>
