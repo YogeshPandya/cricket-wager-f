@@ -399,6 +399,66 @@ export const updateOption = async (matchId, questionId, optionId, payload) => {
   );
 };
 
+export const placeBet = async ({ matchId, questionId, optionId, amount, userId }) => {
+  try {
+    const betData = {
+      userId,
+      questionId,
+      optionId,
+      amount,
+    };
+
+    console.log("📤 Sending betData to backend:", betData);
+
+    const res = await axios.post(`${BASE_URL}/match/${matchId}/place-bet`, betData);
+    return res.data;
+  } catch (err) {
+    console.error("❌ Error placing bet:", err.response?.data || err.message);
+    throw err;
+  }
+};
+
+
+// export const getUserBets = async (userId) => {
+//   try {
+//     const res = await fetch(`${BASE_URL}/match/user/${userId}/bets`);
+//     const data = await res.json();
+//     console.log("✅ Bets fetched from API:", data);
+//     return data.bets || [];
+//   } catch (err) {
+//     console.error('❌ Failed to get user bets:', err);
+//     return [];
+//   }
+// };
+
+export const getUserBets = async (userId) => {
+  try {
+    
+    const response = await fetch(`${BASE_URL}/match/user/${userId}/bets`);
+    const allBets = await response.json();
+ // Debug each bet
+    allBets.forEach((bet, index) => {
+      console.log(`🔍 Bet ${index}:`, {
+        userId: bet.userId,
+        user_id: bet.user_id,
+        userID: bet.userID,
+        allKeys: Object.keys(bet)
+      });
+    });
+    
+    // For now, return all bets to test if the component works
+    console.log("🎯 Returning all bets for testing");
+    return allBets; // This will show all bets temporarily
+    
+  } catch (error) {
+    console.error("Error in getUserBets:", error);
+    return [];
+  }
+};
+
+
+
+
 
 
 

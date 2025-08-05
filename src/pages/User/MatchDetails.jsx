@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getMatchQuestions, getAllMatches } from '../../services/service';
 import socket from "../../socket";
+import { placeBet } from '../../services/service';
 
 export default function MatchDetails() {
   const { matchId } = useParams();
@@ -133,21 +134,57 @@ export default function MatchDetails() {
   }, [matchId]);
 
   const handleOptionClick = (question, option) => {
-    setSelectedOption(option);
-    setQuestionText(question.question);
-    setAmount('');
-    setErrorMsg('');
-    setShowPopup(true);
-  };
+  setSelectedOption({ ...option, questionId: question._id });
+  setQuestionText(question.question);
+  setAmount('');
+  setErrorMsg('');
+  setShowPopup(true);
+};
 
-  const handleConfirm = () => {
-    if (!amount || parseFloat(amount) < 10) {
-      setErrorMsg('Minimum bet amount is ₹10');
-      return;
+
+  const [isPlacing, setIsPlacing] = useState(false);
+
+const handleConfirm = async () => {
+  if (!amount || parseFloat(amount) < 10) {
+    setErrorMsg('Minimum bet amount is ₹10');
+    return;
+  }
+  const userId = localStorage.getItem("userId");
+if (!userId) {
+  setErrorMsg("User not logged in.");
+  return;
+}
+
+  setIsPlacing(true);
+  try {
+    const betData = {
+      matchId,
+      userId,
+      questionId: selectedOption.questionId,
+      optionId: selectedOption._id,
+      amount: parseFloat(amount),
+    };
+
+    const res = await placeBet(betData);
+
+    if (res.success) {
+  alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
+  window.dispatchEvent(new Event("betPlaced"));
+  localStorage.setItem("refreshBets", "true");  // <-- this line
+  setShowPopup(false);
+}
+ else {
+      setErrorMsg('Failed to place bet. Try again.');
     }
-    alert(`You selected "${selectedOption.label}" for "${questionText}" with ₹${amount}`);
-    setShowPopup(false);
-  };
+  } catch (err) {
+    setErrorMsg('Something went wrong. Try again.');
+  } finally {
+    setIsPlacing(false);
+  }
+  
+};
+
+
 
   const calculatePayout = () => {
     const amt = parseFloat(amount);
@@ -269,11 +306,15 @@ export default function MatchDetails() {
                 Cancel
               </button>
               <button
-                onClick={handleConfirm}
-                className="px-4 py-2 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-black font-bold"
-              >
-                Confirm
-              </button>
+  onClick={handleConfirm}
+  disabled={isPlacing}
+  className={`px-4 py-2 rounded-xl font-bold ${
+    isPlacing ? 'bg-yellow-300 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-300 text-black'
+  }`}
+>
+  {isPlacing ? 'Placing...' : 'Confirm'}
+</button>
+
             </div>
           </div>
         </div>

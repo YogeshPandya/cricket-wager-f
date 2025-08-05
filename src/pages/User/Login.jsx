@@ -27,9 +27,11 @@ export default function LoginPage() {
       const res = await loginUser({ username, password });
 
       if (res.data.status) {
+         const user = res.data.data.user; 
         // ✅ Store token with correct key
         localStorage.setItem('access_token', res.data.data.access_token);
         localStorage.setItem('user', JSON.stringify(res.data.data.user));
+        localStorage.setItem('userId', user._id);
 
         alert('Login successful!');
         navigate('/home');

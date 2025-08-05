@@ -1,11 +1,50 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { getUserBets } from '../../services/service';
 
 export default function MyMatch() {
   const location = useLocation();
+  const [userBets, setUserBets] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUserBets = async () => {
+    const userId = localStorage.getItem('userId');
+    console.log("🔍 UserId from localStorage:", userId);
+    
+    if (!userId) {
+      console.warn("No userId found in localStorage");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const bets = await getUserBets(userId);
+      
+      
+      setUserBets(bets || []);
+    } catch (error) {
+      console.error("Error fetching user bets:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserBets();
+
+    const handleBetPlaced = () => {
+      fetchUserBets();
+    };
+
+    window.addEventListener("betPlaced", handleBetPlaced);
+    return () => {
+      window.removeEventListener("betPlaced", handleBetPlaced);
+    };
+  }, []);
 
   const navItems = [
     { label: 'Home', icon: <SportsCricketIcon />, path: '/home' },
@@ -25,14 +64,37 @@ export default function MyMatch() {
           My Matches
         </h3>
 
-        {/* All Predictions Section */}
         <h2 className="text-lg font-semibold text-left text-white mb-2">All Predictions</h2>
+
         <div className="bg-white bg-opacity-10 p-4 rounded-xl shadow min-h-[100px]">
-          <p className="text-gray-200">You have not made any predictions yet.</p>
+          {loading ? (
+            <p className="text-yellow-300">Loading your bets...</p>
+          ) : userBets.length === 0 ? (
+            <p className="text-gray-200">You have not made any predictions yet.</p>
+          ) : (
+            <ul className="space-y-4">
+              {userBets.map((bet, index) => (
+                <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow">
+                  <div className="text-lg font-bold mb-1">
+                    {bet.teamA} vs {bet.teamB}
+                  </div>
+                  <div className="text-sm text-gray-200">
+                    <p><strong>Date:</strong> {bet.date} | <strong>Time:</strong> {bet.time}</p>
+                    <p><strong>League:</strong> {bet.league}</p>
+                    <p><strong>Question:</strong> {bet.question}</p>
+                    <p><strong>Option:</strong> {bet.option}</p>
+                    <p><strong>Ratio:</strong> {bet.ratio}</p>
+                    <p><strong>Amount:</strong> ₹{bet.amount}</p>
+                    <p><strong>Expected Return:</strong> ₹{bet.expectedReturn}</p>
+                    <p><strong>Status:</strong> {bet.betstatus}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
-      {/* Fixed Footer */}
       <footer className="fixed bottom-0 left-0 w-full bg-white bg-opacity-10 backdrop-blur-md text-white py-2 px-4 flex justify-around border-t border-white border-opacity-20">
         {navItems.map((item) => (
           <Link
