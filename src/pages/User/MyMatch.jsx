@@ -64,7 +64,10 @@ export default function MyMatch() {
           My Matches
         </h3>
 
-        <h2 className="text-lg font-semibold text-left text-white mb-2">All Predictions</h2>
+       <h2 className="text-2xl font-extrabold text-left text-yellow-300 mb-4 drop-shadow-md border-b border-yellow-300 pb-1">
+  All Predictions
+</h2>
+
 
         <div className="bg-white bg-opacity-10 p-4 rounded-xl shadow min-h-[100px]">
           {loading ? (
@@ -73,11 +76,13 @@ export default function MyMatch() {
             <p className="text-gray-200">You have not made any predictions yet.</p>
           ) : (
             <ul className="space-y-4">
-              {userBets.map((bet, index) => (
+              {/* {userBets.map((bet, index) => ( */}
+               {[...userBets].reverse().map((bet, index) => (
                 <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow">
-                  <div className="text-lg font-bold mb-1">
-                    {bet.teamA} vs {bet.teamB}
-                  </div>
+                 <div className="text-xl font-extrabold mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-yellow-300 to-pink-400 drop-shadow-lg">
+  {bet.teamA} <span className="text-white">vs</span> {bet.teamB}
+</div>
+
                   <div className="text-sm text-gray-200">
                     <p><strong>Date:</strong> {bet.date} | <strong>Time:</strong> {bet.time}</p>
                     <p><strong>League:</strong> {bet.league}</p>
