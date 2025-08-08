@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getMatchQuestions, getAllMatches } from '../../services/service';
 import socket from "../../socket";
 import { placeBet } from '../../services/service';
+import { getUserDetails } from '../../services/service'; // ✅ make sure this exists
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+
 
 export default function MatchDetails() {
   const { matchId } = useParams();
@@ -15,6 +18,8 @@ export default function MatchDetails() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [matchDetails, setMatchDetails] = useState(null);
+  const [user, setUser] = useState(null);
+  
 
   // Helper function to parse ratio and return only the numerator
   const parseRatioDisplay = (ratio) => {
@@ -32,6 +37,17 @@ export default function MatchDetails() {
     }
     return `${ratio}/10`;
   };
+
+  //new code
+  useEffect(() => {
+  getUserDetails().then((res) => {
+    console.log("getUserDetails response:", res);
+    if (res.status === true && res.data?.user) {
+      setUser(res.data.user);
+    }
+  });
+}, []);
+//end
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,15 +161,23 @@ export default function MatchDetails() {
   const [isPlacing, setIsPlacing] = useState(false);
 
 const handleConfirm = async () => {
-  if (!amount || parseFloat(amount) < 10) {
+  const betAmount = parseFloat(amount);
+
+  if (!betAmount || betAmount < 10) {
     setErrorMsg('Minimum bet amount is ₹10');
     return;
   }
+
+  if (!user || user.balance < betAmount) {
+    setErrorMsg('Insufficient balance');
+    return;
+  }
+
   const userId = localStorage.getItem("userId");
-if (!userId) {
-  setErrorMsg("User not logged in.");
-  return;
-}
+  if (!userId) {
+    setErrorMsg("User not logged in.");
+    return;
+  }
 
   setIsPlacing(true);
   try {
@@ -162,18 +186,23 @@ if (!userId) {
       userId,
       questionId: selectedOption.questionId,
       optionId: selectedOption._id,
-      amount: parseFloat(amount),
+      amount: betAmount,
     };
 
     const res = await placeBet(betData);
 
     if (res.success) {
-  alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
-  window.dispatchEvent(new Event("betPlaced"));
-  localStorage.setItem("refreshBets", "true");  // <-- this line
-  setShowPopup(false);
-}
- else {
+      // ✅ Subtract the amount from local user balance (instant feedback)
+      setUser(prev => ({
+        ...prev,
+        balance: prev.balance - betAmount
+      }));
+
+      alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
+      window.dispatchEvent(new Event("betPlaced"));
+      localStorage.setItem("refreshBets", "true");
+      setShowPopup(false);
+    } else {
       setErrorMsg('Failed to place bet. Try again.');
     }
   } catch (err) {
@@ -181,8 +210,8 @@ if (!userId) {
   } finally {
     setIsPlacing(false);
   }
-  
 };
+
 
 
 
@@ -213,6 +242,12 @@ if (!userId) {
       </button>
 
       <div className="text-center mb-8">
+     <p className="text-base text-white flex items-center mt-1">
+  <AccountBalanceWalletIcon className="mr-1" />
+  Balance: ₹{user?.balance?.toFixed(2) ?? '0.00'}
+</p>
+
+
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wide text-yellow-400 drop-shadow">
           {matchDetails ? `${matchDetails.team1} vs ${matchDetails.team2}` : 'Loading...'}
         </h1>
