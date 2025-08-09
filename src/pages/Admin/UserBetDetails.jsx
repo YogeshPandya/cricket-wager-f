@@ -1,54 +1,106 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from './components/AdminLayout';
-
-const users = [
-  {
-    id: 1,
-    name: 'Yogesh Pandya',
-    bets: [
-      { match: 'India vs Australia', amount: 500, result: 'Win', winAmount: 900 },
-      { match: 'England vs Pakistan', amount: 300, result: 'Loss', winAmount: 0 }
-    ],
-    rechargeHistory: [
-      { amount: 1000, time: '2025-06-25 12:00 PM', status: 'Success' },
-      { amount: 500, time: '2025-06-28 10:30 AM', status: 'Pending' }
-    ],
-    withdrawalHistory: [
-      { amount: 700, time: '2025-06-29 2:45 PM', status: 'Success' }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Jane Doe',
-    bets: [
-      { match: 'India vs Australia', amount: 1000, result: 'Loss', winAmount: 0 }
-    ],
-    rechargeHistory: [
-      { amount: 1500, time: '2025-06-27 11:00 AM', status: 'Success' }
-    ],
-    withdrawalHistory: []
-  }
-];
+import {
+  getUserBets,
+  fetchRechargeHistory,
+  fetchUserWithdrawals,getAllMatches
+} from '../../services/service';
 
 export default function UserBetDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = users.find(u => u.id === parseInt(id));
 
-  if (!user) {
+  const [bets, setBets] = useState([]);
+  const [rechargeHistory, setRechargeHistory] = useState([]);
+  const [withdrawalHistory, setWithdrawalHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+    const [matches, setMatches] = useState([])
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // ✅ Fetch bets
+        const betData = await getUserBets(id);
+        setBets(Array.isArray(betData) ? betData : []);
+        if (betData?.length > 0 && betData[0].username) {
+          setUserName(betData[0].username);
+        }
+
+        // ✅ Fetch recharge history
+        const rechargeData = await fetchRechargeHistory(id);
+        setRechargeHistory(Array.isArray(rechargeData) ? rechargeData : []);
+
+        // ✅ Fetch withdrawal history (same logic as WithdrawRecords)
+        const withdrawalRes = await fetchUserWithdrawals(id);
+        console.log('Withdraw API Response:', withdrawalRes);
+
+        const withdrawals = withdrawalRes?.data?.withdrawals;
+        if (Array.isArray(withdrawals)) {
+          const formatted = withdrawals.map((item, index) => ({
+            id: index + 1,
+            amount: item.amount,
+            status: item.status,
+            createTime: new Date(item.createdAt).toLocaleString(),
+            finishTime:
+              item.status !== 'Pending'
+                ? new Date(item.updatedAt || item.createdAt).toLocaleString()
+                : null,
+          }));
+          setWithdrawalHistory(formatted);
+        } else {
+          setWithdrawalHistory([]);
+        }
+
+          const matchesData = await getAllMatches();
+        setMatches(Array.isArray(matchesData) ? matchesData : []);
+
+      } catch (err) {
+        console.error('Error loading user details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  
+   // ✅ Helper to get match name by ID
+  const getMatchNameById = (matchId) => {
+    const match = matches.find((m) => m._id === matchId);
+    return match ? `${match.teamA} vs ${match.teamB}` : matchId;
+  };
+
+  // ✅ Calculations
+  const totalBet = bets.reduce((sum, b) => sum + (b.amount || 0), 0);
+  const totalWin = bets.reduce((sum, b) => sum + (b.winAmount || 0), 0);
+  const totalLoss = bets.filter(b => b.result === 'Loss').reduce((sum, b) => sum + (b.amount || 0), 0);
+  const netResult = totalWin - totalBet;
+
+  if (loading) {
     return (
       <AdminLayout>
-        <p className="text-red-500">User not found.</p>
+        <p className="text-gray-500">Loading user details...</p>
       </AdminLayout>
     );
   }
 
-  // Calculations
-  const totalBet = user.bets.reduce((sum, b) => sum + b.amount, 0);
-  const totalWin = user.bets.reduce((sum, b) => sum + b.winAmount, 0);
-  const totalLoss = user.bets.filter(b => b.result === 'Loss').reduce((sum, b) => sum + b.amount, 0);
-  const netResult = totalWin - totalBet;
+  if (!bets.length && !rechargeHistory.length && !withdrawalHistory.length) {
+    return (
+      <AdminLayout>
+        <button onClick={() => navigate(-1)} className="text-yellow-500 mb-4 font-medium">
+          ← Back
+        </button>
+        <p className="text-red-500">No records found for this user.</p>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -56,7 +108,9 @@ export default function UserBetDetails() {
         ← Back
       </button>
 
-      <h1 className="text-xl font-bold mb-4 text-green-700">{user.name}'s Account Summary</h1>
+      <h1 className="text-xl font-bold mb-4 text-green-700">
+        {userName ? `${userName}'s Account Summary` : 'User Account Summary'}
+      </h1>
 
       {/* Bets Table */}
       <section className="mb-6">
@@ -73,15 +127,23 @@ export default function UserBetDetails() {
               </tr>
             </thead>
             <tbody>
-              {user.bets.map((bet, idx) => (
-                <tr key={idx} className="border-t">
-                  <td className="px-4 py-2">{bet.match}</td>
-                  <td className="px-4 py-2">₹{bet.amount}</td>
-                  <td className={`px-4 py-2 font-medium ${bet.result === 'Win' ? 'text-green-600' : 'text-red-500'}`}>{bet.result}</td>
-                  <td className="px-4 py-2">{bet.result === 'Win' ? `₹${bet.winAmount}` : '-'}</td>
-                  <td className="px-4 py-2">{bet.result === 'Loss' ? `₹${bet.amount}` : '-'}</td>
+              {bets.length > 0 ? (
+                bets.map((bet, idx) => (
+                  <tr key={idx} className="border-t">
+                     <td className="px-4 py-2">{getMatchNameById(bet.matchId) || bet.match}</td>
+                    <td className="px-4 py-2">₹{bet.amount}</td>
+                    <td className={`px-4 py-2 font-medium ${bet.result === 'Win' ? 'text-green-600' : 'text-red-500'}`}>
+                      {bet.result}
+                    </td>
+                    <td className="px-4 py-2">{bet.result === 'Win' ? `₹${bet.winAmount}` : '-'}</td>
+                    <td className="px-4 py-2">{bet.result === 'Loss' ? `₹${bet.amount}` : '-'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-2 text-gray-500 italic">No bets found</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -100,15 +162,21 @@ export default function UserBetDetails() {
               </tr>
             </thead>
             <tbody>
-              {user.rechargeHistory.map((recharge, idx) => (
-                <tr key={idx} className="border-t">
-                  <td className="px-4 py-2">₹{recharge.amount}</td>
-                  <td className="px-4 py-2">{recharge.time}</td>
-                  <td className={`px-4 py-2 ${recharge.status === 'Success' ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {recharge.status}
-                  </td>
+              {rechargeHistory.length > 0 ? (
+                rechargeHistory.map((recharge, idx) => (
+                  <tr key={idx} className="border-t">
+                    <td className="px-4 py-2">₹{recharge.amount}</td>
+                    <td className="px-4 py-2">{recharge.time || new Date(recharge.createdAt).toLocaleString()}</td>
+                    <td className={`px-4 py-2 ${recharge.status === 'Success' ? 'text-green-600' : 'text-yellow-600'}`}>
+                      {recharge.status}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="px-4 py-2 text-gray-500 italic">No recharge history</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -122,24 +190,26 @@ export default function UserBetDetails() {
             <thead className="bg-purple-50 text-purple-800 font-semibold">
               <tr>
                 <th className="px-4 py-2">Amount (₹)</th>
-                <th className="px-4 py-2">Time</th>
+                <th className="px-4 py-2">Create Time</th>
+                <th className="px-4 py-2">Finish Time</th>
                 <th className="px-4 py-2">Status</th>
               </tr>
             </thead>
             <tbody>
-              {user.withdrawalHistory.length > 0 ? (
-                user.withdrawalHistory.map((withdrawal, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="px-4 py-2">₹{withdrawal.amount}</td>
-                    <td className="px-4 py-2">{withdrawal.time}</td>
-                    <td className={`px-4 py-2 ${withdrawal.status === 'Success' ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {withdrawal.status}
+              {withdrawalHistory.length > 0 ? (
+                withdrawalHistory.map((w) => (
+                  <tr key={w.id} className="border-t">
+                    <td className="px-4 py-2">₹{w.amount}</td>
+                    <td className="px-4 py-2">{w.createTime}</td>
+                    <td className="px-4 py-2">{w.finishTime || '—'}</td>
+                    <td className={`px-4 py-2 ${w.status === 'Success' ? 'text-green-600' : w.status === 'Pending' ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {w.status}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-4 py-2 text-gray-500 italic">No withdrawal history</td>
+                  <td colSpan={4} className="px-4 py-2 text-gray-500 italic">No withdrawal history</td>
                 </tr>
               )}
             </tbody>

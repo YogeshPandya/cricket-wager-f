@@ -10,7 +10,28 @@ export default function MyMatch() {
   const location = useLocation();
   const [userBets, setUserBets] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [winNotifications, setWinNotifications] = useState([]); // ✅ Added
 
+  // ✅ Win notification functions
+  const showWinNotification = (winInfo) => {
+    const notification = {
+      id: Date.now(),
+      ...winInfo,
+    };
+    
+    setWinNotifications(prev => [...prev, notification]);
+    
+    // Auto-remove notification after 5 seconds
+    setTimeout(() => {
+      setWinNotifications(prev => prev.filter(n => n.id !== notification.id));
+    }, 5000);
+  };
+
+  const removeNotification = (id) => {
+    setWinNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  // ✅ Enhanced fetchUserBets with win detection
   const fetchUserBets = async () => {
     const userId = localStorage.getItem('userId');
     console.log("🔍 UserId from localStorage:", userId);
@@ -24,6 +45,34 @@ export default function MyMatch() {
 
     try {
       const bets = await getUserBets(userId);
+      
+      // ✅ Check for new wins (compare with previous bets)
+      if (userBets.length > 0) {
+        const newWins = bets.filter(bet => {
+          const previousBet = userBets.find(prev => 
+            prev.matchId === bet.matchId && 
+            prev.question === bet.question && 
+            prev.option === bet.option
+          );
+          return previousBet && 
+                 previousBet.betstatus === 'pending' && 
+                 bet.betstatus === 'won';
+        });
+
+        // Show win notifications
+        newWins.forEach(bet => {
+          const profit = bet.expectedReturn - bet.amount;
+          showWinNotification({
+            teamA: bet.teamA,
+            teamB: bet.teamB,
+            question: bet.question,
+            option: bet.option,
+            expectedReturn: bet.expectedReturn,
+            profit: profit,
+          });
+        });
+      }
+
       setUserBets(bets || []);
     } catch (error) {
       console.error("Error fetching user bets:", error);
@@ -81,7 +130,46 @@ export default function MyMatch() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white relative">
+      {/* ✅ Win Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {winNotifications.map((notification) => (
+          <div
+            key={notification.id}
+            className="bg-green-500 bg-opacity-95 backdrop-blur-md text-white p-4 rounded-lg shadow-lg border-l-4 border-yellow-400 animate-pulse max-w-sm"
+          >
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className="float-right text-white hover:text-gray-200 text-xl"
+            >
+              ×
+            </button>
+            <div className="pr-6">
+              <h4 className="font-bold text-lg flex items-center">
+                🎉 Congratulations! You Won!
+              </h4>
+              <p className="text-sm mt-1">
+                <strong>{notification.teamA} vs {notification.teamB}</strong>
+              </p>
+              <p className="text-sm">
+                <strong>Your Pick:</strong> {notification.option}
+              </p>
+              <div className="mt-2 p-2 bg-white bg-opacity-20 rounded">
+                <p className="text-sm font-bold">
+                  💰 Won: ₹{notification.expectedReturn}
+                </p>
+                <p className="text-xs">
+                  Added ₹{notification.expectedReturn} to balance
+                </p>
+                <p className="text-xs">
+                  Added ₹{notification.profit} to withdrawable
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="flex-1 overflow-y-auto p-4 pb-28">
         <h1 className="text-4xl font-extrabold drop-shadow-md tracking-wide">
           <span className="text-green-200">Cricket</span>{' '}
@@ -98,16 +186,19 @@ export default function MyMatch() {
 
         <div className="bg-white bg-opacity-10 p-4 rounded-xl shadow min-h-[100px]">
           {loading ? (
-            <p className="text-yellow-300">Loading your bets...</p>
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-300"></div>
+              <p className="text-yellow-300 ml-3">Loading your bets...</p>
+            </div>
           ) : userBets.length === 0 ? (
-            <p className="text-gray-200">You have not made any predictions yet.</p>
+            <p className="text-gray-200 text-center py-8">You have not made any predictions yet.</p>
           ) : (
             <ul className="space-y-4">
               {[...userBets].reverse().map((bet, index) => {
                 const statusDisplay = getStatusDisplay(bet.betstatus);
                 
                 return (
-                  <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow">
+                  <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow hover:bg-opacity-15 transition-all duration-200">
                     <div className="text-xl font-extrabold mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-yellow-300 to-pink-400 drop-shadow-lg">
                       {bet.teamA} <span className="text-white">vs</span> {bet.teamB}
                     </div>
@@ -121,12 +212,19 @@ export default function MyMatch() {
                       <p><strong>Amount:</strong> ₹{bet.amount}</p>
                       <p><strong>Expected Return:</strong> ₹{bet.expectedReturn}</p>
                       
-                      {/* Enhanced Status Display */}
+                      {/* ✅ Enhanced Status Display */}
                       <div className="flex items-center gap-2 mt-2">
                         <strong>Status:</strong>
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusDisplay.color} ${statusDisplay.bg}`}>
                           {statusDisplay.text}
                         </span>
+                        
+                        {/* ✅ Show profit for won bets */}
+                        {bet.betstatus === 'won' && (
+                          <span className="text-green-300 text-xs font-bold ml-2">
+                            +₹{bet.expectedReturn - bet.amount} profit
+                          </span>
+                        )}
                       </div>
                       
                       {/* Show result if available */}
