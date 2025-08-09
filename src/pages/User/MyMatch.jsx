@@ -4,6 +4,7 @@ import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { getUserBets } from '../../services/service';
+import socket from '../../socket'; // Import socket
 
 export default function MyMatch() {
   const location = useLocation();
@@ -23,8 +24,6 @@ export default function MyMatch() {
 
     try {
       const bets = await getUserBets(userId);
-      
-      
       setUserBets(bets || []);
     } catch (error) {
       console.error("Error fetching user bets:", error);
@@ -40,8 +39,23 @@ export default function MyMatch() {
       fetchUserBets();
     };
 
+    // Listen for question updates (when result is set)
+    const handleQuestionUpdated = ({ matchId, question }) => {
+      console.log('🔔 Question result updated:', { matchId, question });
+      
+      // If a result was set, refresh user bets to get updated statuses
+      if (question.result) {
+        fetchUserBets();
+      }
+    };
+
+    // Add socket listener
+    socket.on('questionUpdated', handleQuestionUpdated);
+    
     window.addEventListener("betPlaced", handleBetPlaced);
+    
     return () => {
+      socket.off('questionUpdated', handleQuestionUpdated);
       window.removeEventListener("betPlaced", handleBetPlaced);
     };
   }, []);
@@ -51,6 +65,20 @@ export default function MyMatch() {
     { label: 'My Match', icon: <SportsEsportsIcon />, path: '/my-match' },
     { label: 'Account', icon: <AccountCircleIcon />, path: '/account' },
   ];
+
+  // Function to get status color and text
+  const getStatusDisplay = (status) => {
+    switch (status.toLowerCase()) {
+      case 'won':
+        return { text: 'WON', color: 'text-green-400', bg: 'bg-green-400 bg-opacity-20' };
+      case 'lost':
+        return { text: 'LOST', color: 'text-red-400', bg: 'bg-red-400 bg-opacity-20' };
+      case 'pending':
+        return { text: 'PENDING', color: 'text-yellow-400', bg: 'bg-yellow-400 bg-opacity-20' };
+      default:
+        return { text: status.toUpperCase(), color: 'text-gray-400', bg: 'bg-gray-400 bg-opacity-20' };
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white">
@@ -64,10 +92,9 @@ export default function MyMatch() {
           My Matches
         </h3>
 
-       <h2 className="text-2xl font-extrabold text-left text-yellow-300 mb-4 drop-shadow-md border-b border-yellow-300 pb-1">
-  All Predictions
-</h2>
-
+        <h2 className="text-2xl font-extrabold text-left text-yellow-300 mb-4 drop-shadow-md border-b border-yellow-300 pb-1">
+          All Predictions
+        </h2>
 
         <div className="bg-white bg-opacity-10 p-4 rounded-xl shadow min-h-[100px]">
           {loading ? (
@@ -76,25 +103,40 @@ export default function MyMatch() {
             <p className="text-gray-200">You have not made any predictions yet.</p>
           ) : (
             <ul className="space-y-4">
-              {/* {userBets.map((bet, index) => ( */}
-               {[...userBets].reverse().map((bet, index) => (
-                <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow">
-                 <div className="text-xl font-extrabold mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-yellow-300 to-pink-400 drop-shadow-lg">
-  {bet.teamA} <span className="text-white">vs</span> {bet.teamB}
-</div>
+              {[...userBets].reverse().map((bet, index) => {
+                const statusDisplay = getStatusDisplay(bet.betstatus);
+                
+                return (
+                  <li key={index} className="bg-white bg-opacity-10 p-3 rounded-lg shadow">
+                    <div className="text-xl font-extrabold mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-yellow-300 to-pink-400 drop-shadow-lg">
+                      {bet.teamA} <span className="text-white">vs</span> {bet.teamB}
+                    </div>
 
-                  <div className="text-sm text-gray-200">
-                    <p><strong>Date:</strong> {bet.date} | <strong>Time:</strong> {bet.time}</p>
-                    <p><strong>League:</strong> {bet.league}</p>
-                    <p><strong>Question:</strong> {bet.question}</p>
-                    <p><strong>Option:</strong> {bet.option}</p>
-                    <p><strong>Ratio:</strong> {bet.ratio}</p>
-                    <p><strong>Amount:</strong> ₹{bet.amount}</p>
-                    <p><strong>Expected Return:</strong> ₹{bet.expectedReturn}</p>
-                    <p><strong>Status:</strong> {bet.betstatus}</p>
-                  </div>
-                </li>
-              ))}
+                    <div className="text-sm text-gray-200 space-y-1">
+                      <p><strong>Date:</strong> {bet.date} | <strong>Time:</strong> {bet.time}</p>
+                      <p><strong>League:</strong> {bet.league}</p>
+                      <p><strong>Question:</strong> {bet.question}</p>
+                      <p><strong>Option:</strong> {bet.option}</p>
+                      <p><strong>Ratio:</strong> {bet.ratio}</p>
+                      <p><strong>Amount:</strong> ₹{bet.amount}</p>
+                      <p><strong>Expected Return:</strong> ₹{bet.expectedReturn}</p>
+                      
+                      {/* Enhanced Status Display */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <strong>Status:</strong>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusDisplay.color} ${statusDisplay.bg}`}>
+                          {statusDisplay.text}
+                        </span>
+                      </div>
+                      
+                      {/* Show result if available */}
+                      {bet.result && (
+                        <p><strong>Result:</strong> <span className="text-yellow-300">{bet.result}</span></p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

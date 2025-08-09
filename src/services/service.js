@@ -456,6 +456,44 @@ export const getUserBets = async (userId) => {
   }
 };
 
+//new
+// Add this function to your service.js file
+
+// Add this function to your service.js file
+// Make sure API_BASE_URL is correctly defined (e.g., 'http://localhost:5000')
+
+export const setQuestionResult = async (matchId, questionId, result) => {
+  try {
+    console.log('📡 API Call:', {
+      url: `${BASE_URL}/match/${matchId}/set-result/${questionId}`,
+      method: 'PATCH',
+      body: { result }
+    });
+
+    const response = await fetch(`${BASE_URL}/match/${matchId}/set-result/${questionId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ result }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ API Success:', data);
+    return data;
+  } catch (error) {
+    console.error('Error setting question result:', error);
+    throw error;
+  }
+};
+
+
 
 
 

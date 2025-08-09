@@ -9,6 +9,7 @@ import {
   updateOption
 } from '../../services/service';
 import socket from '../../socket';
+import { setQuestionResult } from '../../services/service';
 
 export default function MatchControl() {
   const [matchList, setMatchList] = useState([]);
@@ -310,6 +311,57 @@ const updateQuestionWithOptions = async (matchId, q) => {
   }
 };
 
+//new
+// Add this function inside your MatchControl component
+const handleSetResult = async (question) => {
+  if (!selectedMatch?._id || !question.result?.trim()) {
+    alert('❗ Please enter a valid result');
+    return;
+  }
+
+  // Check if question exists in database (has _id)
+  if (!question._id) {
+    alert('❗ Please save the question first before setting result');
+    return;
+  }
+
+  try {
+    console.log('🔄 Setting result for:', {
+      matchId: selectedMatch._id,
+      questionId: question._id,
+      result: question.result.trim()
+    });
+
+    // Call the API to set result
+    const response = await setQuestionResult(selectedMatch._id, question._id, question.result.trim());
+    
+    if (response.success) {
+      // Update local state
+      const updated = questions.map((q) => 
+        q.id === question.id ? { ...q, result: question.result.trim() } : q
+      );
+      setQuestionsMap({ ...questionsMap, [selectedMatch._id]: updated });
+
+      // Emit socket event (this will trigger updates in MyMatch page)
+      socket.emit('questionUpdated', {
+        matchId: selectedMatch._id,
+        question: {
+          _id: question._id,
+          result: question.result.trim(),
+          question: question.question,
+          options: question.options
+        }
+      });
+
+      alert('✅ Result set successfully! Bet statuses updated.');
+    }
+  } catch (error) {
+    console.error('❌ Error setting result:', error);
+    alert('Failed to set result. Make sure the question is saved to database first.');
+  }
+};
+//end
+
 
   const saveToBackend = async () => {
     const matchId = selectedMatch?._id;
@@ -494,16 +546,27 @@ const updateQuestionWithOptions = async (matchId, q) => {
               </button>
             </div>
 
-            <div className="mt-4">
-              <label className="text-sm font-medium text-gray-700">Set Result:</label>
-              <input
-                type="text"
-                value={q.result}
-                onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
-                placeholder="e.g., India"
-                className="ml-2 px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
-              />
-            </div>
+           <div className="mt-4 flex items-center gap-2">
+  <label className="text-sm font-medium text-gray-700">Set Result:</label>
+  <input
+    type="text"
+    value={q.result}
+    onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
+    placeholder="e.g., India"
+    className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
+  />
+  <button
+    onClick={() => handleSetResult(q)}
+    disabled={!q.result?.trim() || !q._id}
+    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+    title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
+  >
+    Set Result
+  </button>
+  {!q._id && (
+    <span className="text-xs text-red-500">Save question first</span>
+  )}
+</div>
 
             <div className="mt-4 flex flex-wrap gap-4">
               <button
