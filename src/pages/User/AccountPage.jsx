@@ -88,8 +88,8 @@ export default function AccountPage() {
               Balance: ₹{user.balance?.toFixed(2) ?? '0.00'}
             </p>
             <p className="text-base text-yellow-200 mt-1 font-medium">
-              Withdrawable: ₹{user.balance >= 200 ? user.balance.toFixed(2) : '0.00'}
-            </p>
+  Withdrawable: ₹{user.withdrawable?.toFixed(2) ?? '0.00'}
+</p>
           </div>
         </div>
 

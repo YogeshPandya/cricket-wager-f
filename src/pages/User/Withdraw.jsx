@@ -8,7 +8,7 @@ export default function Withdraw() {
 
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
-  const [balance, setBalance] = useState(null);
+  const [withdrawable, setBalance] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -24,8 +24,8 @@ export default function Withdraw() {
     const fetchBalance = async () => {
       try {
         const res = await getUserDetails();
-        if (res.status && res.data?.user?.balance !== undefined) {
-          setBalance(res.data.user.balance);
+        if (res.status && res.data?.user?.withdrawable !== undefined) {
+          setBalance(res.data.user.withdrawable);
         } else {
           setBalance(0);
         }
@@ -48,7 +48,7 @@ export default function Withdraw() {
       return;
     }
 
-    if (balance < 200) {
+    if (withdrawable < 200) {
       setError('Insufficient balance to withdraw. Minimum required: ₹200');
       return;
     }
@@ -58,7 +58,7 @@ export default function Withdraw() {
       return;
     }
 
-    if (numericAmount > balance) {
+    if (numericAmount > withdrawable) {
       setError('You cannot withdraw more than your available balance');
       return;
     }
@@ -103,8 +103,8 @@ export default function Withdraw() {
         setHolderName('');
         // Optionally refresh balance here
         const res = await getUserDetails();
-        if (res.status && res.data?.user?.balance !== undefined) {
-          setBalance(res.data.user.balance);
+        if (res.status && res.data?.user?.withdrawable !== undefined) {
+          setBalance(res.data.user.withdrawable);
         }
       } else {
         setSubmitError(data.message || 'Withdrawal failed');
@@ -131,7 +131,7 @@ export default function Withdraw() {
         <p className="text-yellow-300 font-medium mb-6">Available Balance: Loading...</p>
       ) : (
         <p className="text-yellow-300 font-medium mb-6">
-          Available Balance: ₹{balance >= 200 ? balance.toFixed(2) : '0.00'}
+          Available Balance: ₹{withdrawable >= 200 ? withdrawable.toFixed(2) : '0.00'}
         </p>
       )}
 

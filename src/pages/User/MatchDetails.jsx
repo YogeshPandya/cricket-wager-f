@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getMatchQuestions, getAllMatches } from '../../services/service';
 import socket from "../../socket";
 import { placeBet } from '../../services/service';
-import { getUserDetails } from '../../services/service'; // ✅ make sure this exists
+import { getUserDetails } from '../../services/service';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LockIcon from '@mui/icons-material/Lock';
 
 export default function MatchDetails() {
   const { matchId } = useParams();
@@ -38,16 +39,25 @@ export default function MatchDetails() {
     return `${ratio}/10`;
   };
 
-  //new code
+  // Helper function to check if question has result and should be frozen
+  const isQuestionFrozen = (question) => {
+    return question.result && question.result.trim() !== '';
+  };
+
+  // Helper function to check if an option is the winning option
+  const isWinningOption = (question, option) => {
+    if (!question.result || question.result.trim() === '') return false;
+    return option.label.toLowerCase().trim() === question.result.toLowerCase().trim();
+  };
+
   useEffect(() => {
-  getUserDetails().then((res) => {
-    console.log("getUserDetails response:", res);
-    if (res.status === true && res.data?.user) {
-      setUser(res.data.user);
-    }
-  });
-}, []);
-//end
+    getUserDetails().then((res) => {
+      console.log("getUserDetails response:", res);
+      if (res.status === true && res.data?.user) {
+        setUser(res.data.user);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,8 +84,8 @@ export default function MatchDetails() {
           options: q.options?.map(opt => ({
             ...opt,
             label: opt.label || opt.text,
-            ratio: opt.ratio, // Keep original ratio format for calculations
-            displayRatio: parseRatioDisplay(opt.ratio), // Add display format
+            ratio: opt.ratio,
+            displayRatio: parseRatioDisplay(opt.ratio),
             visible: opt.visible
           })) || []
         }));
@@ -95,21 +105,20 @@ export default function MatchDetails() {
         setQuestions((prev) => {
           const exists = prev.find(q => q._id === question._id || q.id === question._id);
           if (exists) {
-          return prev.map(q =>
-  q._id === question._id || q.id === question._id
-    ? {
-        ...question,
-        options: question.options?.map(opt => ({
-          ...opt,
-          label: opt.label || opt.text,
-          ratio: opt.ratio,
-          displayRatio: parseRatioDisplay(opt.ratio),
-          visible: opt.visible ?? true,
-        })) || [],
-      }
-    : q
-);
-
+            return prev.map(q =>
+              q._id === question._id || q.id === question._id
+                ? {
+                    ...question,
+                    options: question.options?.map(opt => ({
+                      ...opt,
+                      label: opt.label || opt.text,
+                      ratio: opt.ratio,
+                      displayRatio: parseRatioDisplay(opt.ratio),
+                      visible: opt.visible ?? true,
+                    })) || [],
+                  }
+                : q
+            );
           } else {
             // Add new question
             const newQuestion = {
@@ -150,70 +159,71 @@ export default function MatchDetails() {
   }, [matchId]);
 
   const handleOptionClick = (question, option) => {
-  setSelectedOption({ ...option, questionId: question._id });
-  setQuestionText(question.question);
-  setAmount('');
-  setErrorMsg('');
-  setShowPopup(true);
-};
+    // Prevent clicking if question is frozen (has result)
+    if (isQuestionFrozen(question)) {
+      return;
+    }
 
+    setSelectedOption({ ...option, questionId: question._id });
+    setQuestionText(question.question);
+    setAmount('');
+    setErrorMsg('');
+    setShowPopup(true);
+  };
 
   const [isPlacing, setIsPlacing] = useState(false);
 
-const handleConfirm = async () => {
-  const betAmount = parseFloat(amount);
+  const handleConfirm = async () => {
+    const betAmount = parseFloat(amount);
 
-  if (!betAmount || betAmount < 10) {
-    setErrorMsg('Minimum bet amount is ₹10');
-    return;
-  }
-
-  if (!user || user.balance < betAmount) {
-    setErrorMsg('Insufficient balance');
-    return;
-  }
-
-  const userId = localStorage.getItem("userId");
-  if (!userId) {
-    setErrorMsg("User not logged in.");
-    return;
-  }
-
-  setIsPlacing(true);
-  try {
-    const betData = {
-      matchId,
-      userId,
-      questionId: selectedOption.questionId,
-      optionId: selectedOption._id,
-      amount: betAmount,
-    };
-
-    const res = await placeBet(betData);
-
-    if (res.success) {
-      // ✅ Subtract the amount from local user balance (instant feedback)
-      setUser(prev => ({
-        ...prev,
-        balance: prev.balance - betAmount
-      }));
-
-      alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
-      window.dispatchEvent(new Event("betPlaced"));
-      localStorage.setItem("refreshBets", "true");
-      setShowPopup(false);
-    } else {
-      setErrorMsg('Failed to place bet. Try again.');
+    if (!betAmount || betAmount < 10) {
+      setErrorMsg('Minimum bet amount is ₹10');
+      return;
     }
-  } catch (err) {
-    setErrorMsg('Something went wrong. Try again.');
-  } finally {
-    setIsPlacing(false);
-  }
-};
 
+    if (!user || user.balance < betAmount) {
+      setErrorMsg('Insufficient balance');
+      return;
+    }
 
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      setErrorMsg("User not logged in.");
+      return;
+    }
 
+    setIsPlacing(true);
+    try {
+      const betData = {
+        matchId,
+        userId,
+        questionId: selectedOption.questionId,
+        optionId: selectedOption._id,
+        amount: betAmount,
+      };
+
+      const res = await placeBet(betData);
+
+      if (res.success) {
+        // ✅ Subtract the amount from local user balance (instant feedback)
+        setUser(prev => ({
+          ...prev,
+          balance: prev.balance - betAmount
+        }));
+
+        alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
+        window.dispatchEvent(new Event("betPlaced"));
+        localStorage.setItem("refreshBets", "true");
+        setShowPopup(false);
+      } else {
+        setErrorMsg('Failed to place bet. Try again.');
+      }
+    } catch (err) {
+      setErrorMsg('Something went wrong. Try again.');
+    } finally {
+      setIsPlacing(false);
+    }
+  };
 
   const calculatePayout = () => {
     const amt = parseFloat(amount);
@@ -242,11 +252,10 @@ const handleConfirm = async () => {
       </button>
 
       <div className="text-center mb-8">
-     <p className="text-base text-white flex items-center mt-1">
-  <AccountBalanceWalletIcon className="mr-1" />
-  Balance: ₹{user?.balance?.toFixed(2) ?? '0.00'}
-</p>
-
+        <p className="text-base text-white flex items-center justify-center mt-1">
+          <AccountBalanceWalletIcon className="mr-1" />
+          Balance: ₹{user?.balance?.toFixed(2) ?? '0.00'}
+        </p>
 
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wide text-yellow-400 drop-shadow">
           {matchDetails ? `${matchDetails.team1} vs ${matchDetails.team2}` : 'Loading...'}
@@ -282,25 +291,81 @@ const handleConfirm = async () => {
         <div className="text-center text-gray-400">No questions available for this match.</div>
       ) : (
         <div className="space-y-6">
-          {questions.map((q) => (
-            <div key={q._id} className="bg-white bg-opacity-10 p-6 rounded-2xl shadow-md border border-white/20">
-              <h3 className="text-yellow-300 text-lg font-semibold mb-4">{q.question}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {q.options?.map((opt) => (
-                  <button
-                    key={opt._id}
-                    onClick={() => handleOptionClick(q, opt)}
-                    className="bg-white bg-opacity-20 hover:bg-yellow-400 hover:text-black text-white font-semibold py-3 rounded-xl transition-all duration-300 shadow-md flex justify-between items-center px-4"
-                  >
-                    <span>{opt.label}</span>
-                    <span className="ml-3 inline-block bg-yellow-400 text-black text-sm font-bold px-3 py-1 rounded-full shadow-md">
-                      {opt.displayRatio || parseRatioDisplay(opt.ratio)}
-                    </span>
-                  </button>
-                ))}
+          {questions.map((q) => {
+            const questionFrozen = isQuestionFrozen(q);
+            
+            return (
+              <div 
+                key={q._id} 
+                className={`bg-white bg-opacity-10 p-6 rounded-2xl shadow-md border ${
+                  questionFrozen ? 'border-green-400' : 'border-white/20'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-yellow-300 text-lg font-semibold">{q.question}</h3>
+                  {questionFrozen && (
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon className="text-green-400" fontSize="small" />
+                      <span className="text-green-400 text-sm font-semibold">Result: {q.result}</span>
+                    </div>
+                  )}
+                </div>
+
+                {questionFrozen && (
+                  <div className="mb-4 p-3 bg-green-500 bg-opacity-20 rounded-xl border border-green-400">
+                    <div className="flex items-center gap-2 text-green-300">
+                      <LockIcon fontSize="small" />
+                      <span className="font-semibold">Perdictions Closed - Result Declared: {q.result}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {q.options?.map((opt) => {
+                    const isWinner = isWinningOption(q, opt);
+                    const isClickable = !questionFrozen;
+
+                    return (
+                      <button
+                        key={opt._id}
+                        onClick={() => handleOptionClick(q, opt)}
+                        disabled={!isClickable}
+                        className={`
+                          py-3 rounded-xl transition-all duration-300 shadow-md flex justify-between items-center px-4 font-semibold
+                          ${isClickable 
+                            ? 'bg-white bg-opacity-20 hover:bg-yellow-400 hover:text-black text-white cursor-pointer' 
+                            : 'cursor-not-allowed'
+                          }
+                          ${isWinner 
+                            ? 'bg-green-500 bg-opacity-40 border-2 border-green-400 text-green-100' 
+                            : questionFrozen 
+                              ? 'bg-gray-500 bg-opacity-30 text-gray-300' 
+                              : ''
+                          }
+                        `}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{opt.label}</span>
+                          {isWinner && <CheckCircleIcon className="text-green-400" fontSize="small" />}
+                        </div>
+                        <span className={`
+                          ml-3 inline-block text-sm font-bold px-3 py-1 rounded-full shadow-md
+                          ${isWinner 
+                            ? 'bg-green-400 text-black' 
+                            : questionFrozen 
+                              ? 'bg-gray-400 text-gray-700' 
+                              : 'bg-yellow-400 text-black'
+                          }
+                        `}>
+                          {opt.displayRatio || parseRatioDisplay(opt.ratio)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -341,15 +406,14 @@ const handleConfirm = async () => {
                 Cancel
               </button>
               <button
-  onClick={handleConfirm}
-  disabled={isPlacing}
-  className={`px-4 py-2 rounded-xl font-bold ${
-    isPlacing ? 'bg-yellow-300 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-300 text-black'
-  }`}
->
-  {isPlacing ? 'Placing...' : 'Confirm'}
-</button>
-
+                onClick={handleConfirm}
+                disabled={isPlacing}
+                className={`px-4 py-2 rounded-xl font-bold ${
+                  isPlacing ? 'bg-yellow-300 cursor-not-allowed' : 'bg-yellow-400 hover:bg-yellow-300 text-black'
+                }`}
+              >
+                {isPlacing ? 'Placing...' : 'Confirm'}
+              </button>
             </div>
           </div>
         </div>
