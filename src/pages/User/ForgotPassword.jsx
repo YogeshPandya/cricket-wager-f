@@ -1,7 +1,8 @@
+// src/pages/ForgotPassword.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import cricketLogo from '../../assets/cricket-logo.png';
-import axios from 'axios';
+import { forgotPassword } from '../../services/service'; // ✅ Imported from service
 
 export default function ForgotPassword() {
   const [identifier, setIdentifier] = useState('');
@@ -13,9 +14,7 @@ export default function ForgotPassword() {
     setError('');
 
     try {
-      const res = await axios.post('http://localhost:5000/user/forgot-password', {
-        identifier, // supports email or username
-      });
+      const res = await forgotPassword({ identifier }); // ✅ using service function
 
       if (res.data.status) {
         alert(`Reset Token: ${res.data.data.resetToken}`);
@@ -34,14 +33,12 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-400 to-gray-900 text-white px-4">
       <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-md p-8 rounded-2xl shadow-xl text-center">
-        {/* Logo */}
         <img
           src={cricketLogo}
           alt="Cricket Logo"
           className="w-32 h-32 mx-auto mb-4"
         />
 
-        {/* Title */}
         <h2 className="text-3xl font-bold mb-2">
           <span className="text-green-400">Cricket</span>{' '}
           <span className="text-yellow-400">Wager</span>

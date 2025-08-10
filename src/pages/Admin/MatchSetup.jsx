@@ -1,6 +1,10 @@
 // src/pages/admin/MatchSetup.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from './components/AdminLayout';
+import { createMatch, getAllMatches, deleteMatch } from '../../services/service'; // Adjust path if needed
+import TeamA from '../../assets/TeamA.png';
+import TeamB from '../../assets/TeamB.png';
+
 
 const leagueTeams = {
   International: [
@@ -88,6 +92,31 @@ const leagueTeams = {
 };
 
 const formats = ['T20', 'T10', 'ODI', 'Test', 'Hundred'];
+const getLogoByCode = (code) => {
+  switch (code) {
+    case 'IN':
+    case 'MI':
+    case 'LQ':
+    case 'SS':
+    case 'PC':
+    case 'BR':
+    case 'DG':
+    case 'OI':
+      return TeamA;
+    case 'AU':
+    case 'CSK':
+    case 'KK':
+    case 'ST':
+    case 'JSK':
+    case 'GAW':
+    case 'DB':
+    case 'TR':
+      return TeamB;
+    default:
+      return TeamB; // fallback
+  }
+};
+
 
 export default function MatchSetup() {
   const [form, setForm] = useState({
@@ -102,25 +131,89 @@ export default function MatchSetup() {
 
   const [matches, setMatches] = useState([]);
 
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const data = await getAllMatches();
+        const processed = data.map((match) => {
+          const teamA = Object.values(leagueTeams)
+            .flat()
+            .find(team => team.name === match.teamA);
+          const teamB = Object.values(leagueTeams)
+            .flat()
+            .find(team => team.name === match.teamB);
+
+          return {
+            ...match,
+            teamA: teamA?.code || match.teamA,
+            teamB: teamB?.code || match.teamB,
+            id: match._id,
+          };
+        });
+
+        setMatches(processed);
+      } catch (error) {
+        console.error('Failed to fetch matches:', error);
+      }
+    };
+
+    fetchMatches();
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newMatch = {
-      ...form,
-      id: Date.now(),
-      logoA: `https://flagcdn.com/w80/${form.teamA.toLowerCase()}.png`,
-      logoB: `https://flagcdn.com/w80/${form.teamB.toLowerCase()}.png`,
-    };
-    setMatches([...matches, newMatch]);
-    setForm({ league: '', teamA: '', teamB: '', date: '', time: '', format: '', series: '' });
+
+    const teamAObj = leagueTeams[form.league]?.find(t => t.code === form.teamA);
+    const teamBObj = leagueTeams[form.league]?.find(t => t.code === form.teamB);
+
+    if (!teamAObj || !teamBObj) {
+      alert('Invalid teams selected');
+      return;
+    }
+
+    try {
+      const matchData = {
+        league: form.league,
+        format: form.format,
+        teamA: teamAObj.name,
+        teamB: teamBObj.name,
+        date: form.date,
+        time: form.time,
+        series: form.series,
+      };
+
+      const createdMatch = await createMatch(matchData);
+      
+      
+
+      setMatches([...matches, {
+        ...createdMatch,
+        teamA: teamAObj.code,
+        teamB: teamBObj.code,
+        id: createdMatch._id,
+      }]);
+
+      setForm({ league: '', teamA: '', teamB: '', date: '', time: '', format: '', series: '' });
+    } catch (error) {
+      console.error('Match creation failed:', error);
+      alert('Failed to create match.');
+    }
   };
 
-  const handleDelete = (id) => {
-    setMatches(matches.filter(match => match.id !== id));
-  };
+const handleDelete = async (id) => {
+  try {
+    await deleteMatch(id); // backend se delete
+    setMatches(matches.filter(match => match._id !== id)); // frontend se hatao
+  } catch (error) {
+    console.error('Delete failed:', error);
+    alert('Error deleting match');
+  }
+};
+
 
   const currentTeams = leagueTeams[form.league] || [];
   const teamBOptions = currentTeams.filter(team => team.code !== form.teamA);
@@ -232,8 +325,8 @@ export default function MatchSetup() {
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
             {matches.map((match) => {
-              const teamA = leagueTeams[match.league].find(t => t.code === match.teamA);
-              const teamB = leagueTeams[match.league].find(t => t.code === match.teamB);
+              const teamA = leagueTeams[match.league]?.find(t => t.code === match.teamA);
+              const teamB = leagueTeams[match.league]?.find(t => t.code === match.teamB);
               return (
                 <div key={match.id} className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
                   <div className="text-sm text-gray-600 font-semibold mb-2">
@@ -241,13 +334,13 @@ export default function MatchSetup() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col items-center">
-                      <img src={match.logoA} alt={teamA?.name} className="w-10 h-10 rounded-full" />
-                      <span className="text-xs mt-2 font-medium text-gray-800">{teamA?.name}</span>
+                    <img src={getLogoByCode(teamA?.code)} alt={teamA?.name} className="w-10 h-10 rounded-full" />
+                      <span className="text-xs mt-2 font-medium text-gray-800">{teamA?.name || 'Team A'}</span>
                     </div>
                     <div className="text-yellow-600 font-bold text-lg">VS</div>
                     <div className="flex flex-col items-center">
-                      <img src={match.logoB} alt={teamB?.name} className="w-10 h-10 rounded-full" />
-                      <span className="text-xs mt-2 font-medium text-gray-800">{teamB?.name}</span>
+                 <img src={getLogoByCode(teamB?.code)} alt={teamB?.name} className="w-10 h-10 rounded-full" />
+                      <span className="text-xs mt-2 font-medium text-gray-800">{teamB?.name || 'Team B'}</span>
                     </div>
                   </div>
                   <button
