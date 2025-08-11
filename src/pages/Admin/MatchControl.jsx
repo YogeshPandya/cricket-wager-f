@@ -647,26 +647,58 @@ const handleSetResult = async (question) => {
               </button>
             </div>
 
-           <div className="mt-4 flex items-center gap-2">
-  <label className="text-sm font-medium text-gray-700">Set Result:</label>
-  <input
-    type="text"
-    value={q.result}
-    onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
-    placeholder="e.g., India"
-    className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
-  />
-  <button
-    onClick={() => handleSetResult(q)}
-    disabled={!q.result?.trim() || !q._id}
-    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-    title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
-  >
-    Set Result
-  </button>
-  {!q._id && (
-    <span className="text-xs text-red-500">Save question first</span>
-  )}
+
+<div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+  <div className="flex items-center gap-2 mb-3">
+    <label className="text-sm font-medium text-gray-700">Set Result:</label>
+    <input
+      type="text"
+      value={q.result}
+      onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
+      placeholder="e.g., India"
+      className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
+    />
+    <button
+      onClick={() => handleSetResult(q)}
+      disabled={!q.result?.trim() || !q._id}
+      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+      title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
+    >
+      Set Result
+    </button>
+    {!q._id && (
+      <span className="text-xs text-red-500">Save question first</span>
+    )}
+  </div>
+  
+  {/* Display Available Options */}
+  <div className="mt-3">
+    <label className="text-sm font-medium text-gray-600 mb-2 block">Available Options:</label>
+    <div className="flex flex-wrap gap-2">
+      {q.options.map((opt, index) => (
+        <div 
+          key={index}
+          className={`px-3 py-1 rounded-full text-sm border cursor-pointer transition-colors ${
+            opt.visible 
+              ? 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200' 
+              : 'bg-gray-100 border-gray-300 text-gray-500'
+          }`}
+          onClick={() => {
+            if (opt.visible && opt.text.trim()) {
+              updateQuestion(q.id, 'result', opt.text.trim());
+            }
+          }}
+          title={opt.visible ? "Click to set as result" : "Option is hidden"}
+        >
+          {opt.text || `Option ${index + 1}`}
+          {!opt.visible && ' (Hidden)'}
+          <span className="ml-1 text-xs text-blue-600">
+            ({opt.ratio}x)
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
 </div>
 
             <div className="mt-4 flex flex-wrap gap-4">
