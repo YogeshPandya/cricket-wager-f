@@ -16,33 +16,49 @@ export default function MatchControl() {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [questionsMap, setQuestionsMap] = useState({});
   const [isUpdating, setIsUpdating] = useState(false);
+   const [savedQuestionIds, setSavedQuestionIds] = useState([]); 
 
   const fetchMatchQuestions = async (matchId) => {
-    try {
-      const data = await getMatchQuestions(matchId);
+  try {
+    const data = await getMatchQuestions(matchId);
 
-      const formatted = data.map((q) => ({
-        id: q._id,
-        _id: q._id,
-        question: q.question || '',
-        options: q.options.map((opt) => ({
-          _id: opt._id || `${Math.random()}`,
-          text: opt.label || opt.text || '',
-          ratio: Number(opt.ratio?.split?.('/')?.[0]) || 5,
-          visible: opt.visible ?? true,
-        })),
-        visible: q.visible ?? true,
-        result: q.result || '',
-      }));
+    const formatted = data.map((q) => ({
+      id: q._id,
+      _id: q._id,
+      question: q.question || '',
+      options: q.options.map((opt) => ({
+        _id: opt._id || `${Math.random()}`,
+        text: opt.label || opt.text || '',
+        ratio: Number(opt.ratio?.split?.('/')?.[0]) || 5,
+        visible: opt.visible ?? true,
+      })),
+      visible: q.visible ?? true,
+      result: q.result || '',
+    }));
 
-      setQuestionsMap((prev) => ({
-        ...prev,
-        [matchId]: formatted,
-      }));
-    } catch (err) {
-      console.error(`❌ Error loading questions for match ${matchId}:`, err);
-    }
-  };
+    setQuestionsMap((prev) => ({
+      ...prev,
+      [matchId]: formatted,
+    }));
+
+    // Update savedQuestionIds with actual server IDs
+    const serverIds = formatted.map(q => q._id);
+    setSavedQuestionIds(prev => {
+      const updated = [...prev, ...serverIds].filter((id, index, arr) => arr.indexOf(id) === index);
+      localStorage.setItem('savedQuestionIds', JSON.stringify(updated));
+      return updated;
+    });
+
+  } catch (err) {
+    console.error(`❌ Error loading questions for match ${matchId}:`, err);
+  }
+};
+
+  useEffect(() => {
+  const savedIds = JSON.parse(localStorage.getItem('savedQuestionIds') || '[]');
+  setSavedQuestionIds(savedIds);
+}, []);
+
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -203,49 +219,107 @@ export default function MatchControl() {
     }
   };
 
-  const AddSingleQuestion = async (id) => {
-    const matchId = selectedMatch._id;
-    const q = questions.find((q) => q.id === id);
-    if (!q) return;
+    const AddSingleQuestion = async (id) => {
+  const matchId = selectedMatch._id;
+  const q = questions.find((q) => q.id === id);
+  if (!q) return;
 
-    const payload = {
-      question: q.question,
-      options: q.options.map((opt) => ({
-        label: opt.text,
-        ratio: `${opt.ratio}/10`,
-        visible: opt.visible ?? true,
-      })),
-      visible: q.visible,
-      result: q.result || '',
-    };
-
-    try {
-      await saveQuestionsForMatch(matchId, payload);
-      socket.emit('questionUpdated', {
-        matchId,
-        question: {
-          _id: q.id,
-          ...payload,
-          options: q.options.map((opt) => ({
-            _id: opt._id || `${Math.random()}`,
-            label: opt.text,
-            ratio: `${opt.ratio}/10`,
-            visible: opt.visible ?? true,
-          })),
-        },
-      });
-      alert('✅ Question added successfully!');
-    } catch (err) {
-      console.error('❌ Error adding question:', err);
-      alert('Failed to add question.');
-    }
+  const payload = {
+    question: q.question,
+    options: q.options.map((opt) => ({
+      label: opt.text,
+      ratio: `${opt.ratio}/10`,
+      visible: opt.visible ?? true,
+    })),
+    visible: q.visible,
+    result: q.result || '',
   };
+
+  try {
+    const response = await saveQuestionsForMatch(matchId, payload);
+    console.log('Server response:', response);
+    
+    // Get the actual ID from server response
+    const actualId = response._id || response.questionId || id;
+    
+    // After saving, fetch fresh data from server to get proper IDs
+    setTimeout(async () => {
+      try {
+        await fetchMatchQuestions(matchId);
+        console.log('✅ Questions refreshed with server IDs');
+      } catch (err) {
+        console.error('❌ Error refreshing questions:', err);
+      }
+    }, 500); // Small delay to ensure server has processed
+    
+    // Also update immediately for UI responsiveness
+    const updatedQuestion = {
+      ...q,
+      _id: actualId,
+      id: actualId,
+      // Keep original options for now, server refresh will fix IDs
+      options: q.options.map((opt, index) => ({
+        ...opt,
+        _id: response.options?.[index]?._id || actualId + '-opt-' + index
+      }))
+    };
+    
+    const updated = questions.map((question) => 
+      question.id === id ? updatedQuestion : question
+    );
+    
+    // Update questionsMap immediately
+    setQuestionsMap(prev => ({ 
+      ...prev, 
+      [selectedMatch._id]: updated 
+    }));
+
+    // Emit socket event with proper structure
+    socket.emit('questionUpdated', {
+      matchId,
+      question: {
+        _id: actualId,
+        question: payload.question,
+        visible: payload.visible,
+        result: payload.result,
+        options: updatedQuestion.options.map((opt) => ({
+          _id: opt._id,
+          label: opt.text,
+          ratio: `${opt.ratio}/10`,
+          visible: opt.visible ?? true,
+        })),
+      },
+    });
+
+    // Save with actual server ID
+    setSavedQuestionIds(prev => {
+      const updated = [...prev.filter(savedId => savedId !== id), actualId];
+      localStorage.setItem('savedQuestionIds', JSON.stringify(updated));
+      return updated;
+    });
+
+    alert('✅ Question added successfully!');
+  } catch (err) {
+    console.error('❌ Error adding question:', err);
+    alert('Failed to add question.');
+  }
+};
+
 const updateQuestionWithOptions = async (matchId, q) => {
-  if (!q._id || isUpdating) {
-    console.warn("❗ Skipped update: Missing q._id or already updating", q);
+  // Check if question has proper server _id (not temporary ID)
+  const isTemporaryId = !q._id || q._id.toString().length < 20 || q._id.toString().includes('-');
+  
+  if (isTemporaryId || isUpdating) {
+    console.warn("❗ Skipped update: Invalid _id or already updating", {
+      questionId: q._id,
+      isTemporary: isTemporaryId,
+      isUpdating
+    });
+    alert('❗ This question needs to be saved to server first before updating');
     return;
   }
 
+  console.log('🔄 Starting update for question:', q._id);
   setIsUpdating(true);
 
   try {
@@ -258,25 +332,36 @@ const updateQuestionWithOptions = async (matchId, q) => {
       return { ...prev, [matchId]: updated };
     });
 
-    // Update question fields
+    // Update question fields only if it has valid server ID
+    console.log('🔄 Updating question fields for ID:', q._id);
     await editQuestion(matchId, q._id, {
       question: q.question,
       visible: q.visible,
       result: q.result || ''
     });
 
-    // Update each option
+    // Update each option only if it has valid server ID
     for (const opt of q.options || []) {
       try {
-        if (opt._id) {
+        // Check if option has valid server ID (MongoDB ObjectId is 24 characters)
+        const isValidOptionId = opt._id && 
+                               opt._id.length >= 20 && 
+                               !opt._id.includes('-opt') && 
+                               !opt._id.includes('temp');
+        
+        if (isValidOptionId) {
+          console.log('🔄 Updating option:', opt._id);
           await updateOption(matchId, q._id, opt._id, {
             label: opt.text,
             ratio: `${opt.ratio}/10`,
             visible: opt.visible ?? true
           });
+        } else {
+          console.log('⚠️ Skipping option update (temporary ID):', opt._id);
         }
       } catch (err) {
-        console.error("❌ Error updating option:", opt, err);
+        console.error("❌ Error updating option:", opt._id, err);
+        // Continue with other options even if one fails
       }
     }
 
@@ -286,7 +371,7 @@ const updateQuestionWithOptions = async (matchId, q) => {
       visible: q.visible,
       result: q.result || '',
       options: q.options.map(opt => ({
-        _id: opt._id || `${Math.random()}`,
+        _id: opt._id,
         label: opt.text,
         ratio: `${opt.ratio}/10`,
         visible: opt.visible ?? true
@@ -294,18 +379,34 @@ const updateQuestionWithOptions = async (matchId, q) => {
     };
 
     console.log('🟢 Emitting socket update:', payload);
-    console.log('🔌 Socket connected:', socket.connected);
-
+    
     socket.emit('questionUpdated', {
       matchId,
-      question: { ...payload, _localUpdate: true }
+      question: payload
+    });
+
+    // Remove the _localUpdate flag after successful update
+    setQuestionsMap(prev => {
+      const existing = prev[matchId] || [];
+      const updated = existing.map(question =>
+        question.id === q.id ? { ...question, _localUpdate: undefined } : question
+      );
+      return { ...prev, [matchId]: updated };
     });
 
     alert('✅ Question updated successfully!');
   } catch (error) {
     console.error('❌ Error updating question:', error);
-    alert('Failed to update question');
-    fetchMatchQuestions(matchId);
+    
+    // Show more specific error message
+    if (error.response?.status === 500) {
+      alert('❌ Server error: Question might not exist in database. Try refreshing the page.');
+    } else {
+      alert('❌ Failed to update question: ' + (error.message || 'Unknown error'));
+    }
+    
+    // Refresh from server on error
+    await fetchMatchQuestions(matchId);
   } finally {
     setIsUpdating(false);
   }
@@ -546,35 +647,73 @@ const handleSetResult = async (question) => {
               </button>
             </div>
 
-           <div className="mt-4 flex items-center gap-2">
-  <label className="text-sm font-medium text-gray-700">Set Result:</label>
-  <input
-    type="text"
-    value={q.result}
-    onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
-    placeholder="e.g., India"
-    className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
-  />
-  <button
-    onClick={() => handleSetResult(q)}
-    disabled={!q.result?.trim() || !q._id}
-    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-    title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
-  >
-    Set Result
-  </button>
-  {!q._id && (
-    <span className="text-xs text-red-500">Save question first</span>
-  )}
+
+<div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+  <div className="flex items-center gap-2 mb-3">
+    <label className="text-sm font-medium text-gray-700">Set Result:</label>
+    <input
+      type="text"
+      value={q.result}
+      onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
+      placeholder="e.g., India"
+      className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
+    />
+    <button
+      onClick={() => handleSetResult(q)}
+      disabled={!q.result?.trim() || !q._id}
+      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+      title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
+    >
+      Set Result
+    </button>
+    {!q._id && (
+      <span className="text-xs text-red-500">Save question first</span>
+    )}
+  </div>
+  
+  {/* Display Available Options */}
+  <div className="mt-3">
+    <label className="text-sm font-medium text-gray-600 mb-2 block">Available Options:</label>
+    <div className="flex flex-wrap gap-2">
+      {q.options.map((opt, index) => (
+        <div 
+          key={index}
+          className={`px-3 py-1 rounded-full text-sm border cursor-pointer transition-colors ${
+            opt.visible 
+              ? 'bg-green-100 border-green-300 text-green-700 hover:bg-green-200' 
+              : 'bg-gray-100 border-gray-300 text-gray-500'
+          }`}
+          onClick={() => {
+            if (opt.visible && opt.text.trim()) {
+              updateQuestion(q.id, 'result', opt.text.trim());
+            }
+          }}
+          title={opt.visible ? "Click to set as result" : "Option is hidden"}
+        >
+          {opt.text || `Option ${index + 1}`}
+          {!opt.visible && ' (Hidden)'}
+          <span className="ml-1 text-xs text-blue-600">
+            ({opt.ratio}x)
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
 </div>
 
             <div className="mt-4 flex flex-wrap gap-4">
               <button
-                onClick={() => AddSingleQuestion(q.id)}
-                className="text-green-600 font-bold hover:underline px-4"
-              >
-                💾 Save This Question
-              </button>
+  onClick={() => AddSingleQuestion(q.id)}
+  className={`text-green-600 font-bold px-4 ${
+    (savedQuestionIds.includes(q.id) || savedQuestionIds.includes(q._id) || q._id) 
+      ? 'opacity-50 cursor-not-allowed' 
+      : 'hover:underline'
+  }`}
+  disabled={savedQuestionIds.includes(q.id) || savedQuestionIds.includes(q._id) || q._id} // Check both temp ID and server ID
+>
+  {(savedQuestionIds.includes(q.id) || savedQuestionIds.includes(q._id) || q._id) ? '✅ Saved' : '💾 Save This Question'}
+</button>
+
 
               <button
                 onClick={() => deleteQuestion(q.id)}
@@ -583,15 +722,21 @@ const handleSetResult = async (question) => {
                 ❌ Delete Question
               </button>
 
-              {q._id && (
-                <button
-                  onClick={() => updateQuestionWithOptions(selectedMatch._id, q)}
-                  className="text-yellow-400 font-bold hover:underline px-4"
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? '⏳ Updating...' : '✏️ Update Question'}
-                </button>
-              )}
+              {/* Update Button - Only show for questions with valid server ID */}
+{/* Update Button - Show for questions with valid server ID or recently saved */}
+{(q._id && (
+    (q._id.length >= 20 && !q._id.toString().includes('-')) || // Valid MongoDB ID
+    savedQuestionIds.includes(q._id) || // Recently saved
+    savedQuestionIds.includes(q.id) // Check both temp and server ID
+)) && (
+  <button
+    onClick={() => updateQuestionWithOptions(selectedMatch._id, q)}
+    className="text-yellow-400 font-bold hover:underline px-4"
+    disabled={isUpdating}
+  >
+    {isUpdating ? '⏳ Updating...' : '✏️ Update Question'}
+  </button>
+)}
             </div>
           </div>
         ))}
