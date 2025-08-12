@@ -50,41 +50,49 @@ export default function MyMatch() {
   ];
 
   const getStatusDisplay = (status) => {
-    switch (status.toLowerCase()) {
-      case 'won':
-        return { 
-          text: 'WON', 
-          color: 'text-green-400', 
-          bg: 'bg-green-400 bg-opacity-20',
-          icon: '🏆',
-          glow: 'shadow-lg shadow-green-400/30'
-        };
-      case 'lost':
-        return { 
-          text: 'LOST', 
-          color: 'text-red-400', 
-          bg: 'bg-red-400 bg-opacity-20',
-          icon: '❌',
-          glow: 'shadow-lg shadow-red-400/20'
-        };
-      case 'pending':
-        return { 
-          text: 'PENDING', 
-          color: 'text-yellow-400', 
-          bg: 'bg-yellow-400 bg-opacity-20',
-          icon: '⏳',
-          glow: 'shadow-lg shadow-yellow-400/20'
-        };
-      default:
-        return { 
-          text: status.toUpperCase(), 
-          color: 'text-gray-400', 
-          bg: 'bg-gray-400 bg-opacity-20',
-          icon: 'ℹ️',
-          glow: ''
-        };
-    }
-  };
+  switch (status.toLowerCase()) {
+    case 'won':
+      return { 
+        text: 'WON', 
+        color: 'text-green-400', 
+        bg: 'bg-green-400 bg-opacity-20',
+        icon: '🏆',
+        glow: 'shadow-lg shadow-green-400/30'
+      };
+    case 'lost':
+      return { 
+        text: 'LOST', 
+        color: 'text-red-400', 
+        bg: 'bg-red-400 bg-opacity-20',
+        icon: '❌',
+        glow: 'shadow-lg shadow-red-400/20'
+      };
+    case 'pending':
+      return { 
+        text: 'PENDING', 
+        color: 'text-yellow-400', 
+        bg: 'bg-yellow-400 bg-opacity-20',
+        icon: '⏳',
+        glow: 'shadow-lg shadow-yellow-400/20'
+      };
+    case 'draw':
+      return { 
+        text: 'DRAW', 
+        color: 'text-blue-400', 
+        bg: 'bg-blue-400 bg-opacity-20',
+        icon: '🤝',
+        glow: 'shadow-lg shadow-blue-400/20'
+      };
+    default:
+      return { 
+        text: status.toUpperCase(), 
+        color: 'text-gray-400', 
+        bg: 'bg-gray-400 bg-opacity-20',
+        icon: 'ℹ️',
+        glow: ''
+      };
+  }
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-400 to-gray-900 text-white relative">
@@ -216,11 +224,20 @@ export default function MyMatch() {
                       </div>
                       
                       {bet.result && (
-                        <div className="mt-2 pt-2 border-t border-white/10 text-center">
-                          <span className="text-xs text-gray-300">Result: </span>
-                          <span className="text-yellow-300 font-medium">{bet.result}</span>
-                        </div>
-                      )}
+  <div className="mt-2 pt-2 border-t border-white/10 text-center">
+    <span className="text-xs text-gray-300">Result: </span>
+    <span className={`font-medium ${
+      bet.result.toLowerCase() === 'draw' ? 'text-blue-300' : 'text-yellow-300'
+    }`}>
+      {bet.result}
+    </span>
+    {bet.betstatus?.toLowerCase() === 'draw' && (
+      <div className="text-xs text-blue-300 mt-1">
+        Your bet amount has been refunded
+      </div>
+    )}
+  </div>
+)}
                     </div>
                   </li>
                 );

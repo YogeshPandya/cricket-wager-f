@@ -24,6 +24,7 @@ export default function Dashboard() {
     const s = status.toLowerCase();
     if (s === 'won' || s === 'win') return 'won';
     if (s === 'lost' || s === 'loss') return 'lost';
+     if (s === 'draw') return 'draw'; 
     return 'pending';
   };
 
@@ -41,6 +42,8 @@ export default function Dashboard() {
         return { text: 'LOST', color: 'text-red-400', bg: 'bg-red-400 bg-opacity-20' };
       case 'pending':
         return { text: 'PENDING', color: 'text-yellow-400', bg: 'bg-yellow-400 bg-opacity-20' };
+      case 'draw':
+        return { text: 'DRAW', color: 'text-blue-400', bg: 'bg-blue-400 bg-opacity-20' }; 
       default:
         return { text: status?.toUpperCase() || 'PENDING', color: 'text-gray-400', bg: 'bg-gray-400 bg-opacity-20' };
     }
