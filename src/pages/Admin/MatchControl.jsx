@@ -651,18 +651,27 @@ const handleSetResult = async (question) => {
 <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
   <div className="flex items-center gap-2 mb-3">
     <label className="text-sm font-medium text-gray-700">Set Result:</label>
-    <input
-      type="text"
+    
+    {/* Dropdown for selecting result */}
+    <select
       value={q.result}
       onChange={(e) => updateQuestion(q.id, 'result', e.target.value)}
-      placeholder="e.g., India"
       className="px-3 py-1 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-green-300"
-    />
+    >
+      <option value="">Select result...</option>
+      {q.options.filter(opt => opt.visible).map((opt, index) => (
+        <option key={index} value={opt.text}>
+          {opt.text || `Option ${index + 1}`} ({opt.ratio}x)
+        </option>
+      ))}
+      <option value="Draw">Draw</option>
+    </select>
+    
     <button
       onClick={() => handleSetResult(q)}
       disabled={!q.result?.trim() || !q._id}
       className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-      title={!q._id ? "Save question first" : !q.result?.trim() ? "Enter result" : "Set result and update bet statuses"}
+      title={!q._id ? "Save question first" : !q.result?.trim() ? "Select result" : "Set result and update bet statuses"}
     >
       Set Result
     </button>
@@ -671,7 +680,7 @@ const handleSetResult = async (question) => {
     )}
   </div>
   
-  {/* Display Available Options */}
+  {/* Display Available Options (now redundant since we have dropdown, but keeping for visual reference) */}
   <div className="mt-3">
     <label className="text-sm font-medium text-gray-600 mb-2 block">Available Options:</label>
     <div className="flex flex-wrap gap-2">
