@@ -236,16 +236,16 @@ remaining: Math.max(0, Math.floor((getTargetDate(newMatch.date, newMatch.time) -
               </div>
 
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 w-1/2">
-                  <img src={match.logoA} alt={match.teamA} className="w-8 h-8 rounded-full" />
-                  <span className="text-sm font-medium">{match.teamA}</span>
-                </div>
-                <p className="text-yellow-300 font-bold text-sm">VS</p>
-                <div className="flex items-center gap-2 w-1/2 justify-end">
-                  <span className="text-sm font-medium">{match.teamB}</span>
-                  <img src={match.logoB} alt={match.teamB} className="w-8 h-8 rounded-full" />
-                </div>
-              </div>
+  <div className="flex items-center gap-2 w-1/2">
+    <img src={match.logoA} alt={match.teamA} className="w-8 h-8 rounded-full" />
+    <span className="text-sm font-medium truncate">{match.teamA}</span>
+  </div>
+  <p className="text-yellow-300 font-bold text-sm px-2">VS</p>
+  <div className="flex items-center gap-2 w-1/2 justify-end">
+    <span className="text-sm font-medium truncate">{match.teamB}</span>
+    <img src={match.logoB} alt={match.teamB} className="w-8 h-8 rounded-full" />
+  </div>
+</div>
 
               <div className="text-center">
                {match.remaining > 0 ? (

@@ -200,13 +200,13 @@ export default function MyMatch() {
                         <span className="text-yellow-300">{bet.option}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="font-medium">Odds:</span>
+                        <span className="font-medium">Rate:</span>
                         <span className="text-green-300">{bet.ratio}x</span>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/10">
                         <div className="bg-black bg-opacity-30 p-2 rounded text-center">
-                          <div className="text-xs text-gray-300">Stake</div>
+                          <div className="text-xs text-gray-300">Bet Amount</div>
                           <div className="text-yellow-300 font-bold">₹{bet.amount}</div>
                         </div>
                         <div className="bg-black bg-opacity-30 p-2 rounded text-center">
