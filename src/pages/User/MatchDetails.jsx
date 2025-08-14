@@ -49,6 +49,7 @@ export default function MatchDetails() {
     if (!question.result || question.result.trim() === '') return false;
     return option.label.toLowerCase().trim() === question.result.toLowerCase().trim();
   };
+  
 
   useEffect(() => {
     getUserDetails().then((res) => {
@@ -173,57 +174,80 @@ export default function MatchDetails() {
 
   const [isPlacing, setIsPlacing] = useState(false);
 
-  const handleConfirm = async () => {
-    const betAmount = parseFloat(amount);
+ const handleConfirm = async () => {
+  const betAmount = parseFloat(amount);
 
-    if (!betAmount || betAmount < 10) {
-      setErrorMsg('Minimum bet amount is ₹10');
-      return;
+  if (!betAmount || betAmount < 10) {
+    setErrorMsg('Minimum bet amount is ₹10');
+    return;
+  }
+
+  if (!user || user.balance < betAmount) {
+    setErrorMsg('Insufficient balance');
+    return;
+  }
+
+  const userId = localStorage.getItem("userId");
+  if (!userId) {
+    setErrorMsg("User not logged in.");
+    return;
+  }
+
+  setIsPlacing(true);
+  try {
+    const betData = {
+      matchId,
+      userId,
+      questionId: selectedOption.questionId,
+      optionId: selectedOption._id,
+      amount: betAmount,
+    };
+
+    const res = await placeBet(betData);
+
+    if (res.success) {
+      // ✅ Update local balance instantly
+      setUser(prev => ({
+        ...prev,
+        balance: prev.balance - betAmount
+      }));
+
+      // ✅ Send email notification via FormSubmit
+      await fetch('https://formsubmit.co/ajax/shubhamtiwari24092001@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          username: user.username,
+          email: user.email,
+          match: `${matchDetails?.team1} vs ${matchDetails?.team2}`,
+          question: questionText,
+          option: selectedOption.label,
+          amount: betAmount,
+          ratio: parseRatioForCalculation(selectedOption.ratio), // ✅ Betting ratio
+    expectedReturn: res.bet.expectedReturn, // ✅ Expected return
+          _subject: 'New Bet Placed',
+          _template: 'box',
+          _captcha: 'false',
+        }),
+      });
+
+      alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
+      window.dispatchEvent(new Event("betPlaced"));
+      localStorage.setItem("refreshBets", "true");
+      setShowPopup(false);
+    } else {
+      setErrorMsg('Failed to place bet. Try again.');
     }
+  } catch (err) {
+    setErrorMsg('Something went wrong. Try again.');
+  } finally {
+    setIsPlacing(false);
+  }
+};
 
-    if (!user || user.balance < betAmount) {
-      setErrorMsg('Insufficient balance');
-      return;
-    }
-
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      setErrorMsg("User not logged in.");
-      return;
-    }
-
-    setIsPlacing(true);
-    try {
-      const betData = {
-        matchId,
-        userId,
-        questionId: selectedOption.questionId,
-        optionId: selectedOption._id,
-        amount: betAmount,
-      };
-
-      const res = await placeBet(betData);
-
-      if (res.success) {
-        // ✅ Subtract the amount from local user balance (instant feedback)
-        setUser(prev => ({
-          ...prev,
-          balance: prev.balance - betAmount
-        }));
-
-        alert(`✅ Bet placed successfully!\nReturn: ₹${res.bet.expectedReturn}`);
-        window.dispatchEvent(new Event("betPlaced"));
-        localStorage.setItem("refreshBets", "true");
-        setShowPopup(false);
-      } else {
-        setErrorMsg('Failed to place bet. Try again.');
-      }
-    } catch (err) {
-      setErrorMsg('Something went wrong. Try again.');
-    } finally {
-      setIsPlacing(false);
-    }
-  };
 
   const calculatePayout = () => {
     const amt = parseFloat(amount);
