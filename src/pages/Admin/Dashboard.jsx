@@ -334,8 +334,11 @@ export default function Dashboard() {
                       </td>
                       
                       <td className="px-4 py-3 text-gray-500">
-                        {new Date(bet.betTime).toLocaleTimeString()}
-                      </td>
+  {bet.date && bet.time 
+    ? `${bet.date} • ${bet.time}` 
+    : new Date(bet.betTime).toLocaleString()}
+</td>
+
                     </tr>
                   );
                 })}

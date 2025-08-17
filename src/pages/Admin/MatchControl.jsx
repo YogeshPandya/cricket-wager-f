@@ -6,7 +6,7 @@ import {
   getMatchQuestions,
   deleteQuestion as deleteQuestionFromServer, 
   editQuestion, 
-  updateOption
+  updateOption,
 } from '../../services/service';
 import socket from '../../socket';
 import { setQuestionResult } from '../../services/service';

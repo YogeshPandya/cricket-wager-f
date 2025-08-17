@@ -50,8 +50,15 @@ export default function AccountPage() {
       try {
         const res = await getUserDetails();
         if (res.status) {
+          // ✅ Logic to ensure withdrawable never exceeds balance
+const balance = res.data.user.balance || 0;
+const withdrawable = res.data.user.withdrawable || 0;
+
           setUser({
             ...res.data.user,
+             balance,
+            // Ensure withdrawable is never greater than balance
+            withdrawable: Math.min(withdrawable, balance),
             profilePic: `https://ui-avatars.com/api/?name=${encodeURIComponent(
               res.data.user.username
             )}&background=random`,

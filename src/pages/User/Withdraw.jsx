@@ -8,7 +8,7 @@ export default function Withdraw() {
 
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
-  const [withdrawable, setBalance] = useState(null);
+  const [availableBalance, setAvailableBalance] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -24,14 +24,20 @@ export default function Withdraw() {
     const fetchBalance = async () => {
       try {
         const res = await getUserDetails();
-        if (res.status && res.data?.user?.withdrawable !== undefined) {
-          setBalance(res.data.user.withdrawable);
+         if (res.status && res.data?.user?.withdrawable !== undefined) {
+          // ✅ Get withdrawable amount from AccountPage logic
+          const balance = res.data.user.balance || 0;
+          const withdrawable = res.data.user.withdrawable || 0;
+          
+          // ✅ Apply same logic as AccountPage - ensure withdrawable never exceeds balance
+          const finalWithdrawable = Math.min(withdrawable, balance);
+          setAvailableBalance(finalWithdrawable);
         } else {
-          setBalance(0);
+          setAvailableBalance(0);
         }
       } catch (err) {
         console.error('Error fetching balance:', err);
-        setBalance(0);
+        setAvailableBalance(0);
       } finally {
         setLoading(false);
       }
@@ -48,7 +54,7 @@ export default function Withdraw() {
       return;
     }
 
-    if (withdrawable < 200) {
+    if (availableBalance < 200) {
       setError('Insufficient balance to withdraw. Minimum required: ₹200');
       return;
     }
@@ -58,7 +64,7 @@ export default function Withdraw() {
       return;
     }
 
-    if (numericAmount > withdrawable) {
+    if (numericAmount > availableBalance) {
       setError('You cannot withdraw more than your available balance');
       return;
     }
@@ -102,9 +108,13 @@ export default function Withdraw() {
         setUpiId('');
         setHolderName('');
         // Optionally refresh balance here
+        // ✅ Refresh balance with same logic as AccountPage
         const res = await getUserDetails();
         if (res.status && res.data?.user?.withdrawable !== undefined) {
-          setBalance(res.data.user.withdrawable);
+          const balance = res.data.user.balance || 0;
+          const withdrawable = res.data.user.withdrawable || 0;
+          const finalWithdrawable = Math.min(withdrawable, balance);
+          setAvailableBalance(finalWithdrawable);
         }
       } else {
         setSubmitError(data.message || 'Withdrawal failed');
@@ -131,7 +141,7 @@ export default function Withdraw() {
         <p className="text-yellow-300 font-medium mb-6">Available Balance: Loading...</p>
       ) : (
         <p className="text-yellow-300 font-medium mb-6">
-          Available Balance: ₹{withdrawable >= 200 ? withdrawable.toFixed(2) : '0.00'}
+          Available Balance: ₹{availableBalance >= 200 ? availableBalance.toFixed(2) : '0.00'}
         </p>
       )}
 

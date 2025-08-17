@@ -493,3 +493,10 @@ export const setQuestionResult = async (matchId, questionId, result) => {
   }
 };
 
+export const deleteOption = async (matchId, questionId, optionId) => {
+  return axios.delete(
+    `${BASE_URL}/match/${matchId}/delete-option/${questionId}/${optionId}`
+  );
+};
+
+
